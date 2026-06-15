@@ -36,7 +36,7 @@
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
   /* point these at the next/font variables from layout.tsx */
-  --font-display: var(--font-space-grotesk), system-ui, sans-serif;
+  --font-display: "Helvetica Neue", Helvetica, Arial, sans-serif;
   --font-sans: var(--font-inter), system-ui, sans-serif;
 }
 
@@ -106,7 +106,7 @@
     background: radial-gradient(110% 70% at 50% -15%, #D7155C 0%, #8C0E3D 22%, #1a0510 50%, #0c0307 80%);
     background-attachment: fixed;
   }
-  h1, h2, h3, h4 { font-family: var(--font-display); letter-spacing: -0.02em; }
+  h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 700; letter-spacing: -0.02em; }
 }
 
 @utility bg-gradient-brand { background-image: linear-gradient(135deg, #FF3D86 0%, #D7155C 100%); }

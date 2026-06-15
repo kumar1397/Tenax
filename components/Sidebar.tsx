@@ -14,13 +14,20 @@ const main = [
 
 export function AppSidebar() {
   const pathname = usePathname();
-  const isActive = (url: string) => pathname === url || (url !== "/" && pathname.startsWith(url));
+  const matches = (url: string) =>
+    url === "/" ? pathname === "/" : pathname === url || pathname.startsWith(url + "/");
+  const activeUrl = main
+    .map((i) => i.url)
+    .filter(matches)
+    .sort((a, b) => b.length - a.length)[0];
+
+  const isActive = (url: string) => url === activeUrl;
 
   return (
     <aside className="hidden md:flex flex-col w-60 shrink-0 border-r border-sidebar-border bg-sidebar/80 backdrop-blur-xl sticky top-0 h-screen z-30">
       <div className="px-5 py-5 border-b border-sidebar-border">
         <Link href="/" className="flex items-center gap-2">
-          <Image src="/gg.png" alt="Tenax Logo" width={36} height={36} className="rounded-full" />
+          <Image src="/GC.png" alt="Tenax Logo" width={36} height={36}  />
           <div className="leading-tight">
             <div className="font-display font-bold text-lg tracking-tight">TENAX<span className="text-gradient-brand">GG</span></div>
             <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Esports Hub</div>
