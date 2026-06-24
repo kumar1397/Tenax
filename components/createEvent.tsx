@@ -14,20 +14,11 @@ import {
   ChevronDown,
   Info,
 } from "lucide-react";
+import { createEvent } from "@/actions/event";
 
-const games = [
-  "Valorant",
-  "League of Legends",
-  "CS2",
-  "Fortnite",
-  "Apex Legends",
-  "Rocket League",
-  "Dota 2",
-  "Overwatch 2",
-];
-
+const games = ["InvincibleVS", "2XKO", "Valorant", "Dead by Daylight"];
 const regions = ["NA", "EU", "APAC", "LATAM", "Global"];
-const formats = ["Single Elimination", "Double Elimination", "Round Robin", "Swiss", "Battle Royale"];
+const formats = ["Single Elimination", "Double Elimination", "Round Robin", "Swiss"];
 
 export default function CreateEventPage() {
   const [form, setForm] = useState({
@@ -41,9 +32,23 @@ export default function CreateEventPage() {
     capacity: "128",
     description: "",
     cover: "",
+    rules: "",          // NEW
+    bracketUrl: "",     // NEW
+    streamUrl: "",      // NEW
   });
 
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState("");
+
   const update = (key: string, value: string) => setForm((f) => ({ ...f, [key]: value }));
+
+  const handlePublish = async () => {
+    setSaving(true);
+    setMessage("");
+    const res = await createEvent(form);
+    setSaving(false);
+    setMessage(res.error ? `Error: ${res.error}` : "Published! ✓");
+  };
 
   return (
     <div className="p-6 max-w-[1200px] mx-auto">
@@ -209,6 +214,34 @@ export default function CreateEventPage() {
               )}
             </div>
           </SectionCard>
+
+          <Field label="Rules" hint="One rule per line">
+            <textarea
+              value={form.rules}
+              onChange={(e) => update("rules", e.target.value)}
+              rows={4}
+              placeholder={"Must be 16+\nNo smurf accounts\nCheck-in 30 min before start"}
+              className="w-full bg-card border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring/60 placeholder:text-muted-foreground resize-none"
+            />
+          </Field>
+
+          <Field label="Bracket URL" hint="Link to the bracket (Challonge, etc.)">
+            <input
+              value={form.bracketUrl}
+              onChange={(e) => update("bracketUrl", e.target.value)}
+              placeholder="https://challonge.com/..."
+              className="w-full bg-card border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring/60 placeholder:text-muted-foreground"
+            />
+          </Field>
+
+          <Field label="Stream URL" hint="Twitch / YouTube link">
+            <input
+              value={form.streamUrl}
+              onChange={(e) => update("streamUrl", e.target.value)}
+              placeholder="https://twitch.tv/..."
+              className="w-full bg-card border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring/60 placeholder:text-muted-foreground"
+            />
+          </Field>
         </div>
 
         {/* Sidebar */}
@@ -263,12 +296,24 @@ export default function CreateEventPage() {
           </SectionCard>
 
           <div className="rounded-2xl border border-border bg-card/60 backdrop-blur p-5 space-y-4">
-            <button className="w-full py-3 rounded-xl bg-gradient-brand text-white font-semibold shadow-glow hover:scale-[1.02] transition">
-              Publish Tournament
+            <button
+              onClick={handlePublish}
+              disabled={saving}
+              className="w-full py-3 rounded-xl bg-gradient-brand text-white font-semibold shadow-glow hover:scale-[1.02] transition disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {saving ? "Publishing..." : "Publish Tournament"}
             </button>
             <button className="w-full py-3 rounded-xl bg-card border border-border text-foreground font-semibold hover:border-brand transition">
               Save as Draft
             </button>
+            {message && (
+              <p
+                className={`text-sm text-center ${message.startsWith("Error") ? "text-red-500" : "text-green-500"
+                  }`}
+              >
+                {message}
+              </p>
+            )}
             <p className="text-[11px] text-muted-foreground text-center leading-relaxed">
               Publishing makes your event visible to all players. You can edit details later.
             </p>

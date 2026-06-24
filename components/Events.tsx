@@ -1,17 +1,65 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Search, SlidersHorizontal, Trophy, Users2, Calendar, MapPin, Plus } from "lucide-react";
-import { events } from "@/lib/mock";
+import { getEvents } from "@/actions/event";
 
-const gamesList = ["All", "Valorant", "League of Legends", "CS2", "Fortnite", "Apex Legends", "Rocket League", "Dota 2", "Overwatch 2"];
+// ---- The shape the UI works with (was previously imported from mock) ----
+type Event = {
+  id: string;
+  title: string;
+  game: string;
+  region: string;
+  format: string;
+  prize: string;
+  entry: string;
+  startsAt: string;
+  status: "Live" | "Upcoming" | "Completed";
+  participants: number;
+  capacity: number;
+  organizer: string;
+  cover: string;
+};
+
+// ---- Convert a DB row -> UI Event ----
+const STATUS_MAP: Record<string, Event["status"]> = {
+  upcoming: "Upcoming",
+  ongoing: "Live",
+  completed: "Completed",
+};
+
+const FALLBACK_COVER =
+  "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=1200&q=80";
+
+function toUiEvent(row: any): Event {
+  return {
+    id: String(row.id),
+    title: row.event_name ?? "Untitled",
+    game: row.game_name ?? "",
+    region: row.event_region ?? "",
+    format: row.event_format ?? "",
+    prize: row.prize_pool ? `$${Number(row.prize_pool).toLocaleString()}` : "$0",
+    entry: row.is_paid ? `$${row.event_fee ?? 0}` : "Free",
+    startsAt: row.event_date ?? new Date().toISOString(),
+    status: STATUS_MAP[row.event_status] ?? "Upcoming",
+    participants: row.no_of_player ?? 0,
+    capacity: row.total_player ?? 0,
+    organizer: row.organizer ?? "—",
+    cover: row.cover_image || FALLBACK_COVER,
+  };
+}
+
+const gamesList = ["All", "InvincibleVS", "2XKO", "Valorant", "Dead by Daylight"];
 const regionsList = ["All", "NA", "EU", "APAC", "LATAM", "Global"];
-const statusList: Array<"All" | "Live" | "Upcoming" | "Registration"> = ["All", "Live", "Upcoming", "Registration"];
+const statusList: Array<"All" | "Live" | "Upcoming" | "Completed"> = ["All", "Live", "Upcoming", "Completed"];
 const formatList = ["All", "Single Elim", "Double Elim", "Round Robin", "Swiss"];
 const entryList = ["All", "Free", "Paid"];
 
 export default function EventsPage() {
+  const [events, setEvents] = useState<Event[]>([]);
+  const [loading, setLoading] = useState(true);
+
   const [q, setQ] = useState("");
   const [game, setGame] = useState("All");
   const [region, setRegion] = useState("All");
@@ -19,6 +67,14 @@ export default function EventsPage() {
   const [format, setFormat] = useState("All");
   const [entry, setEntry] = useState("All");
   const [prize, setPrize] = useState(0);
+
+  // Fetch events from Supabase on mount
+  useEffect(() => {
+    getEvents().then((res) => {
+      if (res.data) setEvents(res.data.map(toUiEvent));
+      setLoading(false);
+    });
+  }, []);
 
   const filtered = useMemo(() => events.filter((e) => {
     if (q && !e.title.toLowerCase().includes(q.toLowerCase())) return false;
@@ -31,7 +87,7 @@ export default function EventsPage() {
     const prizeNum = parseInt(e.prize.replace(/[^0-9]/g, ""), 10);
     if (prizeNum < prize) return false;
     return true;
-  }), [q, game, region, status, format, entry, prize]);
+  }), [events, q, game, region, status, format, entry, prize]);
 
   return (
     <div className="p-6 max-w-[1600px] mx-auto">
@@ -39,7 +95,9 @@ export default function EventsPage() {
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-6">
         <div>
           <h1 className="text-3xl md:text-4xl font-bold">Tournaments</h1>
-          <p className="text-muted-foreground mt-1">{filtered.length} events match your filters</p>
+          <p className="text-muted-foreground mt-1">
+            {loading ? "Loading events..." : `${filtered.length} events match your filters`}
+          </p>
         </div>
 
         <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
@@ -125,12 +183,12 @@ export default function EventsPage() {
                   <Meta icon={Users2} text={`${e.participants}/${e.capacity}`} />
                 </div>
                 <div className="mt-3 h-1.5 rounded-full bg-secondary overflow-hidden">
-                  <div className="h-full bg-gradient-brand" style={{ width: `${(e.participants / e.capacity) * 100}%` }} />
+                  <div className="h-full bg-gradient-brand" style={{ width: `${e.capacity ? (e.participants / e.capacity) * 100 : 0}%` }} />
                 </div>
               </div>
             </Link>
           ))}
-          {filtered.length === 0 && (
+          {!loading && filtered.length === 0 && (
             <div className="col-span-full py-20 text-center text-muted-foreground">
               <Trophy className="size-12 mx-auto mb-3 opacity-30" />
               No tournaments match your filters.

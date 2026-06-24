@@ -4,12 +4,10 @@ import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { events, players } from "@/lib/mock";
 import { HeroAnimation } from "@/components/HeroAnimation";
-import { WhoWeAre } from "./Info";
 export default function Home() {
   const featured = events[0];
   const live = events.filter((e) => e.status === "Live").slice(0, 3);
   const upcoming = events.filter((e) => e.status !== "Ended").slice(0, 6);
-  const topPlayers = players.slice(0, 6);
 
   return (
     <div className="p-6 space-y-8 max-w-[1600px] mx-auto">
@@ -36,16 +34,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Quick stats row */}
-      <section className="grid grid-cols-3 gap-4">
-        <MiniStat label="Game Titles" value="6" />
-        <MiniStat label="Players" value="52K" />
-        <MiniStat label="Prize Pool" value="$10,000+" />
-        <MiniStat label="Impressions" value="1M+" />
-        <MiniStat label="Watch Hours" value="500+" />
-        <MiniStat label="Players Served" value="2,000+" />
-      </section>
-      <WhoWeAre />
       {/* Live now */}
       <section>
         <SectionHeader title="Live Right Now" link="/events" />

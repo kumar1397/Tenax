@@ -1,27 +1,98 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { players } from "@/lib/mock";
-import { Search, Trophy, Crown, TrendingUp } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { getUsers } from "@/actions/event";
+import { Search, Trophy, Crown, TrendingUp, ChevronDown } from "lucide-react";
 
-const gameOpts = ["All", "Valorant", "League of Legends", "CS2", "Fortnite", "Apex Legends", "Rocket League", "Dota 2", "Overwatch 2"];
+type Player = {
+  id: string;
+  name: string;
+  handle: string;
+  game: string;
+  region: string;
+  mmr: number;
+  rank: string;
+  winrate: number;
+  hours: number;
+  status: string;
+  avatar: string;
+  orgName: string;
+  orgTricode: string;
+  orgLogo: string;
+  orgLink: string;
+};
+
+function toPlayer(row: any): Player {
+  return {
+    id: String(row.id),
+    name: row.player_name ?? "Unknown",
+    handle: row.handle ?? "",
+    game: row.game ?? "",
+    region: row.region ?? "",
+    mmr: row.mmr ?? 0,
+    rank: row.rank ?? "",
+    winrate: row.win_rate ?? 0,
+    hours: row.hours_played ?? 0,
+    status: row.status ?? "Offline",
+    avatar:
+      row.player_image ||
+      `https://api.dicebear.com/9.x/bottts-neutral/svg?seed=${row.player_name ?? "x"}`,
+    orgName: row.org_name ?? "",
+    orgTricode: row.org_tricode ?? "",
+    orgLogo: row.org_logo ?? "",
+    orgLink: row.org_link ?? "",
+  };
+}
+
+const gameOpts = ["All", "InvincibleVS", "2XKO", "Valorant", "Dead by Daylight"];
 const regionOpts = ["All", "NA", "EU", "APAC", "LATAM", "Global"];
+type SortKey = "mmr" | "winrate" | "duration" | "org";
+const sortOpts: { value: SortKey; label: string }[] = [
+  { value: "mmr", label: "MMR" },
+  { value: "winrate", label: "Win Rate" },
+  { value: "duration", label: "Duration" },
+  { value: "org", label: "Org" },
+];
 
 export default function UsersPage() {
+  const [players, setPlayers] = useState<Player[]>([]);
+  const [loading, setLoading] = useState(true);
+
   const [q, setQ] = useState("");
   const [game, setGame] = useState("All");
   const [region, setRegion] = useState("All");
-  const [sort, setSort] = useState<"rp" | "winrate">("rp");
+  const [org, setOrg] = useState("All");
+  const [sort, setSort] = useState<SortKey>("mmr");
+
+  useEffect(() => {
+    getUsers().then((res) => {
+      if (res.data) setPlayers(res.data.map(toPlayer));
+      setLoading(false);
+    });
+  }, []);
+
+  const orgOpts = useMemo(() => {
+    const names = Array.from(new Set(players.map((p) => p.orgName).filter(Boolean))).sort();
+    return ["All", ...names];
+  }, [players]);
 
   const filtered = useMemo(() => {
     let list = players.filter((p) =>
       (!q || p.name.toLowerCase().includes(q.toLowerCase()) || p.handle.includes(q.toLowerCase())) &&
       (game === "All" || p.game === game) &&
-      (region === "All" || p.region === region)
+      (region === "All" || p.region === region) &&
+      (org === "All" || p.orgName === org)
     );
-    list = [...list].sort((a, b) => sort === "rp" ? b.rp - a.rp : b.winrate - a.winrate);
+    list = [...list].sort((a, b) => {
+      switch (sort) {
+        case "winrate": return b.winrate - a.winrate;
+        case "duration": return b.hours - a.hours;
+        case "org": return a.orgName.localeCompare(b.orgName) || b.mmr - a.mmr;
+        default: return b.mmr - a.mmr;
+      }
+    });
     return list;
-  }, [q, game, region, sort]);
+  }, [players, q, game, region, org, sort]);
 
   const top3 = filtered.slice(0, 3);
 
@@ -30,7 +101,9 @@ export default function UsersPage() {
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-6">
         <div>
           <h1 className="text-3xl md:text-4xl font-bold">Players</h1>
-          <p className="text-muted-foreground mt-1">{filtered.length} competitors ranked globally</p>
+          <p className="text-muted-foreground mt-1">
+            {loading ? "Loading players..." : `${filtered.length} competitors ranked globally`}
+          </p>
         </div>
         <div className="relative w-full md:w-80">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
@@ -53,9 +126,12 @@ export default function UsersPage() {
                 {place === 1 && <Crown className="absolute top-3 right-3 size-5 text-primary" />}
                 <img src={p.avatar} alt="" className="size-20 mx-auto rounded-2xl bg-secondary" />
                 <div className="mt-3 font-bold text-lg">{p.name}</div>
-                <div className="text-xs text-muted-foreground">{p.game}</div>
-                <div className="mt-3 text-2xl font-bold text-gradient-brand">{p.rp} RP</div>
-                <div className="text-xs text-muted-foreground">{p.winrate}% win rate</div>
+                <div className="text-xs text-muted-foreground flex items-center justify-center gap-1.5">
+                  {p.orgLogo && <img src={p.orgLogo} alt="" className="size-4 rounded" />}
+                  {p.orgTricode || p.game}
+                </div>
+                <div className="mt-3 text-2xl font-bold text-gradient-brand">{p.mmr.toLocaleString()} MMR</div>
+                <div className="text-xs text-muted-foreground">{p.winrate}% win &middot; {p.hours.toLocaleString()}h</div>
               </div>
             );
           })}
@@ -63,24 +139,29 @@ export default function UsersPage() {
       )}
 
       {/* Filters */}
-      <div className="flex flex-wrap items-center gap-2 mb-5">
-        <Group value={game} onChange={setGame} options={gameOpts} />
-        <Group value={region} onChange={setRegion} options={regionOpts} />
-        <div className="ml-auto flex items-center gap-2 text-sm">
-          <span className="text-muted-foreground">Sort by</span>
-          <button onClick={() => setSort("rp")} className={`px-3 py-1.5 rounded-md text-xs font-semibold border ${sort === "rp" ? "bg-gradient-brand text-white border-transparent" : "bg-card border-border"}`}>RP</button>
-          <button onClick={() => setSort("winrate")} className={`px-3 py-1.5 rounded-md text-xs font-semibold border ${sort === "winrate" ? "bg-gradient-brand text-white border-transparent" : "bg-card border-border"}`}>Win Rate</button>
+      <div className="flex flex-wrap items-center gap-3 mb-5">
+        <Select label="Game" value={game} onChange={setGame} options={gameOpts} />
+        <Select label="Region" value={region} onChange={setRegion} options={regionOpts} />
+        <Select label="Org" value={org} onChange={setOrg} options={orgOpts} />
+        <div className="ml-auto">
+          <Select
+            label="Sort by"
+            value={sort}
+            onChange={(v) => setSort(v as SortKey)}
+            options={sortOpts.map((s) => s.value)}
+            labels={Object.fromEntries(sortOpts.map((s) => [s.value, s.label]))}
+          />
         </div>
       </div>
 
       {/* Table */}
       <div className="rounded-2xl border border-border bg-card/60 backdrop-blur overflow-hidden">
-        <div className="grid grid-cols-[60px_1fr_120px_100px_120px_100px] px-4 py-3 text-[11px] uppercase tracking-wider text-muted-foreground font-bold border-b border-border bg-secondary/40">
-          <div>Rank</div><div>Player</div><div>Game</div><div>Region</div><div className="text-right">RP</div><div className="text-right">Win %</div>
+        <div className="grid grid-cols-[50px_1fr_130px_120px_90px_110px_80px] px-4 py-3 text-[11px] uppercase tracking-wider text-muted-foreground font-bold border-b border-border bg-secondary/40">
+          <div>Rank</div><div>Player</div><div>Org</div><div>Game</div><div>Region</div><div className="text-right">MMR</div><div className="text-right">Win %</div>
         </div>
         <div className="divide-y divide-border">
           {filtered.map((p, i) => (
-            <div key={p.id} className="grid grid-cols-[60px_1fr_120px_100px_120px_100px] items-center px-4 py-3 hover:bg-secondary/30 transition">
+            <div key={p.id} className="grid grid-cols-[50px_1fr_130px_120px_90px_110px_80px] items-center px-4 py-3 hover:bg-secondary/30 transition">
               <div className="font-bold text-muted-foreground">#{i + 1}</div>
               <div className="flex items-center gap-3 min-w-0">
                 <div className="relative">
@@ -92,12 +173,19 @@ export default function UsersPage() {
                 </div>
                 <div className="min-w-0">
                   <div className="font-bold truncate">{p.name}</div>
-                  <div className="text-[11px] text-muted-foreground truncate">@{p.handle}</div>
+                  <div className="text-[11px] text-muted-foreground truncate">@{p.handle} &middot; {p.hours.toLocaleString()}h</div>
                 </div>
               </div>
-              <div className="text-sm">{p.game}</div>
+              <div className="flex items-center gap-2 min-w-0">
+                {p.orgLogo && <img src={p.orgLogo} alt="" className="size-6 rounded bg-secondary shrink-0" />}
+                <span className="text-sm font-semibold truncate">{p.orgTricode || "\u2014"}</span>
+              </div>
+              <div className="text-sm truncate">{p.game}</div>
               <div className="text-sm text-muted-foreground">{p.region}</div>
-              <div className="text-right font-bold text-gradient-brand">{p.rp.toLocaleString()}</div>
+              <div className="text-right">
+                <div className="font-bold text-gradient-brand">{p.mmr.toLocaleString()}</div>
+                {p.rank && <div className="text-[10px] text-muted-foreground">{p.rank}</div>}
+              </div>
               <div className="text-right">
                 <span className="inline-flex items-center gap-1 text-sm font-semibold">
                   <TrendingUp className="size-3 text-primary" />{p.winrate}%
@@ -105,7 +193,7 @@ export default function UsersPage() {
               </div>
             </div>
           ))}
-          {filtered.length === 0 && (
+          {!loading && filtered.length === 0 && (
             <div className="py-16 text-center text-muted-foreground">
               <Trophy className="size-10 mx-auto mb-2 opacity-30" />No players match your filters.
             </div>
@@ -116,15 +204,34 @@ export default function UsersPage() {
   );
 }
 
-function Group({ value, onChange, options }: { value: string; onChange: (v: string) => void; options: string[] }) {
+function Select({
+  label,
+  value,
+  onChange,
+  options,
+  labels,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  options: string[];
+  labels?: Record<string, string>;
+}) {
   return (
-    <div className="flex flex-wrap gap-1.5">
-      {options.map((o) => (
-        <button key={o} onClick={() => onChange(o)} className={[
-          "px-3 py-1.5 rounded-md text-xs font-semibold border transition",
-          value === o ? "bg-gradient-brand text-white border-transparent" : "bg-card border-border text-muted-foreground hover:text-foreground",
-        ].join(" ")}>{o}</button>
-      ))}
-    </div>
+    <label className="flex items-center gap-2">
+      <span className="text-[11px] uppercase tracking-wider text-muted-foreground font-bold">{label}</span>
+      <div className="relative">
+        <select
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className="appearance-none bg-card border border-border rounded-lg pl-3 pr-8 py-2 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-ring/60 cursor-pointer min-w-[120px]"
+        >
+          {options.map((o) => (
+            <option key={o} value={o}>{labels?.[o] ?? o}</option>
+          ))}
+        </select>
+        <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
+      </div>
+    </label>
   );
 }
