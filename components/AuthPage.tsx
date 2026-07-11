@@ -2,19 +2,20 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { z } from "zod";
 import toast from "react-hot-toast";
 import { Mail, Lock, Loader2, Trophy } from "lucide-react";
+import { createClient } from "@/utils/supabase/client";
+import { signIn, signUp } from "@/actions/auth";
 
 const schema = z.object({
   email: z.string().trim().email("Invalid email").max(255),
   password: z.string().min(6, "Min 6 characters").max(72),
 });
 
-// --- TEMP MOCK: remove when Supabase is wired back in ---
-const fakeDelay = (ms = 900) => new Promise((res) => setTimeout(res, ms));
-
 export default function AuthPage() {
+  const router = useRouter();
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -27,18 +28,38 @@ export default function AuthPage() {
       toast.error(parsed.error.issues[0].message);
       return;
     }
+
     setLoading(true);
-    await fakeDelay(); // pretend network call
+    const res = mode === "signup" ? await signUp(email, password) : await signIn(email, password);
     setLoading(false);
-    toast.success(mode === "signup" ? "Account created! (mock)" : "Welcome back, summoner. (mock)");
-    // router.push("/"); // re-enable once real auth is back
+
+    if (res?.error) {
+      toast.error(res.error);
+      return;
+    }
+
+    if (mode === "signup") {
+      toast.success("Account created! Check your email to confirm (if required).");
+      setMode("signin");
+    } else {
+      toast.success("Welcome back, summoner.");
+      router.push("/");
+      router.refresh();
+    }
   }
 
-  async function handleGoogle() {
+  async function handleOAuth(provider: "google" | "discord") {
     setLoading(true);
-    await fakeDelay(600);
-    setLoading(false);
-    toast("Google sign-in is mocked for now");
+    const supabase = createClient();
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider,
+      options: { redirectTo: `${location.origin}/auth/callback` },
+    });
+    if (error) {
+      setLoading(false);
+      toast.error(error.message);
+    }
+    // On success the browser is redirected to the provider automatically.
   }
 
   function notSupported(name: string) {
@@ -122,10 +143,10 @@ export default function AuthPage() {
           </div>
 
           <div className="grid grid-cols-3 gap-2">
-            <SocialButton label="Google" onClick={handleGoogle} disabled={loading}>
+            <SocialButton label="Google" onClick={() => handleOAuth("google")} disabled={loading}>
               <svg viewBox="0 0 24 24" className="size-5"><path fill="#fff" d="M21.35 11.1h-9.17v2.97h5.27c-.23 1.45-1.69 4.24-5.27 4.24-3.17 0-5.76-2.62-5.76-5.86s2.59-5.86 5.76-5.86c1.81 0 3.02.77 3.71 1.43l2.53-2.44C16.92 4.06 14.78 3 12.18 3 6.96 3 2.76 7.2 2.76 12.45s4.2 9.45 9.42 9.45c5.44 0 9.04-3.82 9.04-9.2 0-.62-.07-1.09-.17-1.6z"/></svg>
             </SocialButton>
-            <SocialButton label="Discord" onClick={() => notSupported("Discord")}>
+            <SocialButton label="Discord" onClick={() => handleOAuth("discord")} disabled={loading}>
               <svg viewBox="0 0 24 24" className="size-5" fill="#5865F2"><path d="M20.317 4.369A19.79 19.79 0 0016.558 3a14.7 14.7 0 00-.677 1.382 18.27 18.27 0 00-5.487 0A14.6 14.6 0 009.717 3a19.74 19.74 0 00-3.76 1.369C2.018 10.09 1.04 15.66 1.53 21.144A19.94 19.94 0 007.6 23.5a14.66 14.66 0 001.275-2.06 12.97 12.97 0 01-2.008-.96c.168-.124.333-.253.493-.386a14.13 14.13 0 0012.28 0c.16.133.325.262.493.386-.64.38-1.314.703-2.01.96A14.5 14.5 0 0019.4 23.5a19.92 19.92 0 006.07-2.356c.574-6.353-.98-11.872-4.153-16.775zM8.02 17.6c-1.183 0-2.157-1.085-2.157-2.42 0-1.336.955-2.42 2.157-2.42 1.21 0 2.176 1.094 2.157 2.42 0 1.335-.955 2.42-2.157 2.42zm7.96 0c-1.183 0-2.157-1.085-2.157-2.42 0-1.336.955-2.42 2.157-2.42 1.21 0 2.176 1.094 2.157 2.42 0 1.335-.946 2.42-2.157 2.42z"/></svg>
             </SocialButton>
             <SocialButton label="Steam" onClick={() => notSupported("Steam")}>

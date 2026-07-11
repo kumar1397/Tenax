@@ -2,12 +2,13 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Trophy, Users, Plus, Info } from "lucide-react";
+import { Home, Trophy, Users, Plus, Info, Earth } from "lucide-react";
 
 const main = [
   { title: "Home", url: "/", icon: Home },
   { title: "Events", url: "/events", icon: Trophy },
   { title: "Players", url: "/players", icon: Users },
+  { title: "Organisation", url: "/organisation", icon: Earth  },
   { title: "Create Event", url: "/events/create", icon: Plus },
   { title: "About Us", url: "/about", icon: Info },
 ];

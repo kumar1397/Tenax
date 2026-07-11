@@ -9,7 +9,7 @@ const sponsors = [
 export default function About() {
     return (
         <>
-            <section className="relative overflow-hidden rounded-3xl border border-border bg-card/60 backdrop-blur p-8 md:p-12">
+            <section className="relative overflow-hidden rounded-3xl border border-border bg-card/60 backdrop-blur p-8 md:p-12 mx-4">
                 {/* soft crimson glow accent */}
                 <div className="pointer-events-none absolute -top-24 -right-24 size-72 rounded-full bg-gradient-brand-soft blur-3xl opacity-60" />
 
@@ -38,7 +38,7 @@ export default function About() {
                     </h2>
                 </div>
 
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mx-4">
                     <MiniStat label="Game Titles" value="6" />
                     <MiniStat label="Players" value="52K" />
                     <MiniStat label="Prize Pool" value="$10,000+" />
@@ -49,7 +49,7 @@ export default function About() {
             </section>
 
             {/* Sponsors */}
-            <section className="relative overflow-hidden rounded-3xl border border-border bg-card/60 backdrop-blur p-8 md:p-12">
+            <section className="relative overflow-hidden rounded-3xl border border-border bg-card/60 backdrop-blur mt-8 mx-4 p-8 md:p-12">
                 <div className="text-center max-w-2xl mx-auto">
                     <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-secondary border border-border text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
                         <Handshake className="size-3.5 text-primary" /> Our Sponsors

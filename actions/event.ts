@@ -97,3 +97,49 @@ export async function getUsers() {
     if (error) return { error: error.message, data: [] }
     return { data }
 }
+
+
+export type OrgRow = {
+  name: string;
+  tricode: string;
+  logo: string;
+  link: string;
+  members: number;
+  totalMmr: number;
+  avgMmr: number;
+};
+
+export async function getOrgStandings() {
+  const supabase = await createClient()
+
+  const { data, error } = await supabase
+    .from('Users')
+    .select('org_name, org_tricode, org_logo, org_link, mmr')
+
+  if (error) return { error: error.message, data: [] as OrgRow[] }
+
+  const orgs = new Map<string, OrgRow>()
+
+  for (const u of data ?? []) {
+    if (!u.org_name) continue
+    const o = orgs.get(u.org_name) ?? {
+      name: u.org_name,
+      tricode: u.org_tricode ?? '',
+      logo: u.org_logo ?? '',
+      link: u.org_link ?? '',
+      members: 0,
+      totalMmr: 0,
+      avgMmr: 0,
+    }
+    o.members += 1
+    o.totalMmr += u.mmr ?? 0
+    orgs.set(u.org_name, o)
+  }
+
+  const result = Array.from(orgs.values()).map((o) => ({
+    ...o,
+    avgMmr: o.members ? Math.round(o.totalMmr / o.members) : 0,
+  }))
+
+  return { data: result }
+}
