@@ -7,6 +7,7 @@ import {
   Eye, Activity, Tv, PlayCircle, Award, Info, Network, ExternalLink,
   Medal, Crown,
 } from "lucide-react";
+import { RegisterButton } from "@/components/registerButton";
 
 export type EventVM = {
   id: string;
@@ -246,9 +247,7 @@ export default function EventDetailClient({ event, roster }: { event: EventVM; r
             <div className="rounded-2xl border border-brand bg-gradient-brand-soft p-6 shadow-card-soft">
               <div className="text-xs uppercase tracking-wider text-muted-foreground">Registration {event.entry === "Free" ? "is" : "fee"}</div>
               <div className="text-3xl font-bold text-gradient-brand mt-1">{event.entry}</div>
-              <button className="mt-4 w-full bg-gradient-brand text-white font-bold py-3 rounded-xl shadow-glow hover:scale-[1.02] transition">
-                Register Now
-              </button>
+              <RegisterButton eventId={Number(event.id)} />
             </div>
           )}
 

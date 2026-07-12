@@ -26,6 +26,7 @@ export type ProfileForm = {
   org_name: string
   org_tricode: string
   org_link: string
+  org_logo: string   
   player_image: string
 }
 
@@ -44,6 +45,7 @@ export async function updateProfile(form: ProfileForm) {
       org_name: form.org_name || null,
       org_tricode: form.org_tricode || null,
       org_link: form.org_link || null,
+      org_logo: form.org_logo || null,        // NEW
       player_image: form.player_image || null,
     })
     .eq('auth_id', user.id)

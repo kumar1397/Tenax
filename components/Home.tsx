@@ -1,19 +1,74 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
-import { events, players } from "@/lib/mock";
+import { getEvents } from "@/actions/event";
 import { HeroAnimation } from "@/components/HeroAnimation";
+
+type Event = {
+  id: string;
+  title: string;
+  game: string;
+  region: string;
+  format: string;
+  prize: string;
+  status: "Live" | "Upcoming" | "Completed";
+  participants: number;
+  organizer: string;
+  cover: string;
+  startsAt: string;
+};
+
+const STATUS_MAP: Record<string, Event["status"]> = {
+  upcoming: "Upcoming",
+  ongoing: "Live",
+  completed: "Completed",
+};
+
+const FALLBACK_COVER =
+  "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=1200&q=80";
+
+function toUiEvent(row: any): Event {
+  return {
+    id: String(row.id),
+    title: row.event_name ?? "Untitled",
+    game: row.game_name ?? "",
+    region: row.event_region ?? "",
+    format: row.event_format ?? "",
+    prize: row.prize_pool ? `$${Number(row.prize_pool).toLocaleString()}` : "Free",
+    status: STATUS_MAP[row.event_status] ?? "Upcoming",
+    participants: row.no_of_player ?? 0,
+    organizer: row.organizer ?? "—",
+    cover: row.cover_image || FALLBACK_COVER,
+    startsAt: row.event_date ?? new Date().toISOString(),
+  };
+}
+
 export default function Home() {
+  const [events, setEvents] = useState<Event[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    getEvents().then((res) => {
+      if (res.data) setEvents(res.data.map(toUiEvent));
+      setLoading(false);
+    });
+  }, []);
+
   const featured = events[0];
-  const live = events.filter((e) => e.status === "Live").slice(0, 3);
-  const upcoming = events.filter((e) => e.status !== "Ended").slice(0, 6);
+
+  const liveAll = events.filter((e) => e.status === "Live");
+  const upcomingAll = events.filter((e) => e.status !== "Completed");
+
+  const live = liveAll.slice(0, 3);
+  const upcoming = upcomingAll.slice(0, 4);
 
   return (
     <div className="p-6 space-y-8 max-w-[1600px] mx-auto">
       {/* Hero */}
       <section className="relative overflow-hidden rounded-3xl border border-brand shadow-card-soft bg-card">
-        <img src={featured.cover} alt="" className="absolute inset-0 size-full object-cover opacity-50" />
+        <img src={featured?.cover || FALLBACK_COVER} alt="" className="absolute inset-0 size-full object-cover opacity-50" />
         <div className="absolute inset-0 bg-gradient-to-r from-background via-background/85 to-background/30" />
         <HeroAnimation />
         <div className="relative p-8 md:p-28 flex flex-col items-center text-center gap-6">
@@ -34,56 +89,49 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Live now */}
       <section>
-        <SectionHeader title="Live Right Now" link="/events" />
-        <div className="grid md:grid-cols-3 gap-4">
-          {live.map((e) => <LiveCard key={e.id} event={e} />)}
-        </div>
+        <SectionHeader title="Live Right Now" link="/events?status=Live" showLink={liveAll.length > 3} />
+        {loading ? (
+          <p className="text-center text-muted-foreground py-8">Loading events...</p>
+        ) : live.length === 0 ? (
+          <p className="text-center text-muted-foreground py-8">No live tournaments right now.</p>
+        ) : (
+          <div className="grid md:grid-cols-3 gap-4">
+            {live.map((e) => <LiveCard key={e.id} event={e} />)}
+          </div>
+        )}
       </section>
 
-      {/* Upcoming + Top players */}
       <section className="my-20">
-        <SectionHeader title="Upcoming Tournaments" link="/events" />
-        <div className="grid sm:grid-cols-2 gap-4">
-          {upcoming.slice(0, 4).map((e) => <EventCard key={e.id} event={e} />)}
-        </div>
-
+        <SectionHeader title="Upcoming Tournaments" link="/events?status=Upcoming" showLink={upcomingAll.length > 4} /> 
+        {loading ? (
+          <p className="text-center text-muted-foreground py-8">Loading events...</p>
+        ) : upcoming.length === 0 ? (
+          <p className="text-center text-muted-foreground py-8">No upcoming tournaments yet.</p>
+        ) : (
+          <div className="grid sm:grid-cols-2 gap-4">
+            {upcoming.map((e) => <EventCard key={e.id} event={e} />)}
+          </div>
+        )}
       </section>
     </div>
   );
 }
 
-function Stat({ label, value }: { label: string; value: string }) {
-  return (
-    <div>
-      <div className="text-2xl font-bold text-gradient-brand">{value}</div>
-      <div className="text-xs text-muted-foreground uppercase tracking-wider">{label}</div>
-    </div>
-  );
-}
-
-function MiniStat({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-2xl border border-border bg-card/60 backdrop-blur p-4 hover:border-brand transition flex flex-col items-center justify-center">
-      <div className="mt-3 text-2xl font-bold">{value}</div>
-      <div className="text-lg font-bold text-gradient-brand">{label}</div>
-    </div>
-  );
-}
-
-function SectionHeader({ title, link }: { title: string; link: string }) {
+function SectionHeader({ title, link, showLink }: { title: string; link: string; showLink: boolean }) {
   return (
     <div className="relative flex items-center justify-center mb-4">
       <h2 className="text-4xl font-bold text-center">{title}</h2>
-      <Link href={link} className="absolute right-0 text-sm text-muted-foreground hover:text-primary inline-flex items-center gap-1">
-        View all <ChevronRight className="size-4" />
-      </Link>
+      {showLink && (
+        <Link href={link} className="absolute right-0 text-sm text-muted-foreground hover:text-primary inline-flex items-center gap-1">
+          View all <ChevronRight className="size-4" />
+        </Link>
+      )}
     </div>
   );
 }
 
-function LiveCard({ event }: { event: typeof events[number] }) {
+function LiveCard({ event }: { event: Event }) {
   return (
     <Link href={`/events/${event.id}`} className="group relative overflow-hidden rounded-2xl border border-border hover:border-brand transition shadow-card-soft">
       <div className="aspect-[16/10] relative">
@@ -111,7 +159,7 @@ function LiveCard({ event }: { event: typeof events[number] }) {
   );
 }
 
-function EventCard({ event }: { event: typeof events[number] }) {
+function EventCard({ event }: { event: Event }) {
   return (
     <Link href={`/events/${event.id}`} className="group rounded-2xl border border-border bg-card/60 backdrop-blur p-4 hover:border-brand transition shadow-card-soft">
       <div className="flex items-start gap-3">

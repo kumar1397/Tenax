@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { getUsers } from "@/actions/event";
 import { Search, Trophy, Crown, TrendingUp, ChevronDown } from "lucide-react";
+import { Loader } from "./Loader";
 
 type Player = {
   id: string;
@@ -34,14 +35,24 @@ function toPlayer(row: any): Player {
     winrate: row.win_rate ?? 0,
     hours: row.hours_played ?? 0,
     status: row.status ?? "Offline",
-    avatar:
-      row.player_image ||
-      `https://api.dicebear.com/9.x/bottts-neutral/svg?seed=${row.player_name ?? "x"}`,
+    avatar: row.player_image ?? "",   
     orgName: row.org_name ?? "",
     orgTricode: row.org_tricode ?? "",
     orgLogo: row.org_logo ?? "",
     orgLink: row.org_link ?? "",
   };
+}
+
+function Avatar({ src, name, className = "" }: { src?: string; name: string; className?: string }) {
+  const initial = (name?.trim()?.[0] ?? "?").toUpperCase();
+  if (src) {
+    return <img src={src} alt={name} className={`object-cover bg-secondary ${className}`} />;
+  }
+  return (
+    <div className={`bg-gradient-brand grid place-items-center text-white font-bold ${className}`}>
+      {initial}
+    </div>
+  );
 }
 
 const gameOpts = ["All", "InvincibleVS", "2XKO", "Valorant", "Dead by Daylight"];
@@ -101,9 +112,6 @@ export default function UsersPage() {
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-6">
         <div>
           <h1 className="text-3xl md:text-4xl font-bold">Players</h1>
-          <p className="text-muted-foreground mt-1">
-            {loading ? "Loading players..." : `${filtered.length} competitors ranked globally`}
-          </p>
         </div>
         <div className="relative w-full md:w-80">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
@@ -112,8 +120,9 @@ export default function UsersPage() {
         </div>
       </div>
 
-      {/* Podium */}
-      {top3.length === 3 && (
+      {loading ? (
+        <Loader label="Loading players..." />
+      ) : top3.length === 3 ? (
         <div className="grid md:grid-cols-3 gap-4 mb-8">
           {[top3[1], top3[0], top3[2]].map((p, idx) => {
             const place = idx === 1 ? 1 : idx === 0 ? 2 : 3;
@@ -124,7 +133,7 @@ export default function UsersPage() {
               ].join(" ")}>
                 <div className="absolute top-3 left-3 size-8 rounded-lg bg-gradient-brand text-white grid place-items-center font-bold shadow-glow">#{place}</div>
                 {place === 1 && <Crown className="absolute top-3 right-3 size-5 text-primary" />}
-                <img src={p.avatar} alt="" className="size-20 mx-auto rounded-2xl bg-secondary" />
+                <Avatar src={p.avatar} name={p.name} className="size-20 mx-auto rounded-2xl text-2xl" />
                 <div className="mt-3 font-bold text-lg">{p.name}</div>
                 <div className="text-xs text-muted-foreground flex items-center justify-center gap-1.5">
                   {p.orgLogo && <img src={p.orgLogo} alt="" className="size-4 rounded" />}
@@ -136,9 +145,8 @@ export default function UsersPage() {
             );
           })}
         </div>
-      )}
+      ) : null}
 
-      {/* Filters */}
       <div className="flex flex-wrap items-center gap-3 mb-5">
         <Select label="Game" value={game} onChange={setGame} options={gameOpts} />
         <Select label="Region" value={region} onChange={setRegion} options={regionOpts} />
@@ -154,10 +162,9 @@ export default function UsersPage() {
         </div>
       </div>
 
-      {/* Table */}
       <div className="rounded-2xl border border-border bg-card/60 backdrop-blur overflow-hidden">
         <div className="grid grid-cols-[50px_1fr_130px_120px_90px_110px_80px] px-4 py-3 text-[11px] uppercase tracking-wider text-muted-foreground font-bold border-b border-border bg-secondary/40">
-          <div>Rank</div><div>Player</div><div>Org</div><div>Game</div><div>Region</div><div className="text-right">MMR</div><div className="text-right">Win %</div>
+          <div>Rank</div><div>Player</div><div>Org</div><div>Region</div><div className="text-right">MMR</div><div className="text-right">Win %</div>
         </div>
         <div className="divide-y divide-border">
           {filtered.map((p, i) => (
@@ -165,7 +172,7 @@ export default function UsersPage() {
               <div className="font-bold text-muted-foreground">#{i + 1}</div>
               <div className="flex items-center gap-3 min-w-0">
                 <div className="relative">
-                  <img src={p.avatar} alt="" className="size-10 rounded-lg bg-secondary" />
+                  <Avatar src={p.avatar} name={p.name} className="size-10 rounded-lg text-base" />
                   <span className={[
                     "absolute -bottom-0.5 -right-0.5 size-3 rounded-full border-2 border-card",
                     p.status === "Online" ? "bg-green-500" : p.status === "In Match" ? "bg-primary" : "bg-muted",
@@ -180,7 +187,6 @@ export default function UsersPage() {
                 {p.orgLogo && <img src={p.orgLogo} alt="" className="size-6 rounded bg-secondary shrink-0" />}
                 <span className="text-sm font-semibold truncate">{p.orgTricode || "\u2014"}</span>
               </div>
-              <div className="text-sm truncate">{p.game}</div>
               <div className="text-sm text-muted-foreground">{p.region}</div>
               <div className="text-right">
                 <div className="font-bold text-gradient-brand">{p.mmr.toLocaleString()}</div>

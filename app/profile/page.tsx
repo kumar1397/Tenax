@@ -7,7 +7,7 @@ import toast from "react-hot-toast";
 import { createClient } from "@/utils/supabase/client";
 import { getMyProfile, updateProfile, type ProfileForm } from "@/actions/profile";
 import {
-  Trophy, Gamepad2, Target, Clock, Calendar, MapPin, Settings, LogOut, Shield, Loader2, Save,
+  Trophy, Gamepad2, Target, Clock, Calendar, MapPin, Settings, LogOut, Shield, Loader2, Save, Upload,
 } from "lucide-react";
 import { signOut } from "@/actions/auth";
 
@@ -16,17 +16,20 @@ const REGIONS = ["", "NA", "EU", "APAC", "LATAM", "Global"];
 
 const EMPTY: ProfileForm = {
   player_name: "", handle: "", game: "", region: "",
-  org_name: "", org_tricode: "", org_link: "", player_image: "",
+  org_name: "", org_tricode: "", org_link: "", org_logo: "", player_image: "",
 };
 
 export default function ProfilePage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
   const [form, setForm] = useState<ProfileForm>(EMPTY);
   const [stats, setStats] = useState({ mmr: 0, winrate: 0, rank: "", hours: 0 });
   const [joined, setJoined] = useState("");
   const [email, setEmail] = useState("");
+  const [authAvatar, setAuthAvatar] = useState(""); // account image from Google, etc.
 
   const update = (k: keyof ProfileForm, v: string) => setForm((f) => ({ ...f, [k]: v }));
 
@@ -38,6 +41,7 @@ export default function ProfilePage() {
         return;
       }
       setEmail(data.user.email ?? "");
+      setAuthAvatar(data.user.user_metadata?.avatar_url || data.user.user_metadata?.picture || "");
       setJoined(new Date(data.user.created_at).toLocaleDateString(undefined, { month: "long", year: "numeric" }));
 
       const res = await getMyProfile();
@@ -51,6 +55,7 @@ export default function ProfilePage() {
           org_name: p.org_name ?? "",
           org_tricode: p.org_tricode ?? "",
           org_link: p.org_link ?? "",
+          org_logo: p.org_logo ?? "",
           player_image: p.player_image ?? "",
         });
         setStats({ mmr: p.mmr ?? 0, winrate: p.win_rate ?? 0, rank: p.rank ?? "Unranked", hours: p.hours_played ?? 0 });
@@ -58,6 +63,44 @@ export default function ProfilePage() {
       setLoading(false);
     });
   }, [router]);
+
+  async function handleAvatarFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingAvatar(true);
+    const supabase = createClient();
+    const ext = file.name.split(".").pop();
+    const path = `${crypto.randomUUID()}.${ext}`;
+    const { error } = await supabase.storage.from("avatars").upload(path, file);
+    if (error) {
+      setUploadingAvatar(false);
+      toast.error(error.message);
+      return;
+    }
+    const { data } = supabase.storage.from("avatars").getPublicUrl(path);
+    update("player_image", data.publicUrl);
+    setUploadingAvatar(false);
+    toast.success("Image uploaded — Save to keep it");
+  }
+
+  async function handleOrgLogoFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingLogo(true);
+    const supabase = createClient();
+    const ext = file.name.split(".").pop();
+    const path = `${crypto.randomUUID()}.${ext}`;
+    const { error } = await supabase.storage.from("org-logos").upload(path, file);
+    if (error) {
+      setUploadingLogo(false);
+      toast.error(error.message);
+      return;
+    }
+    const { data } = supabase.storage.from("org-logos").getPublicUrl(path);
+    update("org_logo", data.publicUrl);
+    setUploadingLogo(false);
+    toast.success("Logo uploaded — Save to keep it");
+  }
 
   async function handleSave() {
     setSaving(true);
@@ -78,6 +121,8 @@ export default function ProfilePage() {
 
   const displayName = form.player_name || form.handle || email.split("@")[0];
   const initial = (displayName[0] ?? "?").toUpperCase();
+  // Priority: uploaded image → account (Google) image → initial
+  const avatarSrc = form.player_image || authAvatar;
 
   const statCards = [
     { label: "MMR", value: stats.mmr.toLocaleString(), icon: Trophy },
@@ -97,8 +142,8 @@ export default function ProfilePage() {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-end gap-5 -mt-14 px-2 md:px-6">
         <div className="relative">
-          {form.player_image ? (
-            <img src={form.player_image} alt="" className="size-28 md:size-32 rounded-2xl object-cover shadow-glow ring-4 ring-background bg-secondary" />
+          {avatarSrc ? (
+            <img src={avatarSrc} alt="" className="size-28 md:size-32 rounded-2xl object-cover shadow-glow ring-4 ring-background bg-secondary" />
           ) : (
             <div className="size-28 md:size-32 rounded-2xl bg-gradient-brand grid place-items-center text-white font-bold text-4xl shadow-glow ring-4 ring-background">
               {initial}
@@ -176,8 +221,33 @@ export default function ProfilePage() {
           <Field label="Org Link">
             <Input value={form.org_link} onChange={(v) => update("org_link", v)} placeholder="https://..." />
           </Field>
-          <Field label="Avatar Image URL">
-            <Input value={form.player_image} onChange={(v) => update("player_image", v)} placeholder="https://..." />
+
+          <Field label="Org Logo" hint="Upload your team/org logo">
+            <div className="flex items-center gap-3">
+              {form.org_logo
+                ? <img src={form.org_logo} alt="" className="size-12 rounded-lg object-cover bg-secondary shrink-0" />
+                : <div className="size-12 rounded-lg bg-secondary grid place-items-center text-muted-foreground text-[10px] shrink-0">Logo</div>}
+              <label className="flex-1 flex items-center gap-2 bg-secondary/60 border border-dashed border-border rounded-lg px-3 py-2.5 text-sm cursor-pointer hover:border-brand transition">
+                <Upload className="size-4 text-muted-foreground" />
+                <span className="text-muted-foreground">{uploadingLogo ? "Uploading..." : "Upload logo"}</span>
+                <input type="file" accept="image/*" onChange={handleOrgLogoFile} className="hidden" disabled={uploadingLogo} />
+              </label>
+            </div>
+          </Field>
+
+          <Field label="Profile Image" hint="Upload a photo — otherwise your account image is used">
+            <div className="flex items-center gap-3">
+              <img
+                src={avatarSrc || `https://api.dicebear.com/9.x/bottts-neutral/svg?seed=${email || "x"}`}
+                alt=""
+                className="size-12 rounded-lg object-cover bg-secondary shrink-0"
+              />
+              <label className="flex-1 flex items-center gap-2 bg-secondary/60 border border-dashed border-border rounded-lg px-3 py-2.5 text-sm cursor-pointer hover:border-brand transition">
+                <Upload className="size-4 text-muted-foreground" />
+                <span className="text-muted-foreground">{uploadingAvatar ? "Uploading..." : "Upload new image"}</span>
+                <input type="file" accept="image/*" onChange={handleAvatarFile} className="hidden" disabled={uploadingAvatar} />
+              </label>
+            </div>
           </Field>
         </div>
 

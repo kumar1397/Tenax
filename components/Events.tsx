@@ -4,8 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Search, SlidersHorizontal, Trophy, Users2, Calendar, MapPin, Plus } from "lucide-react";
 import { getEvents } from "@/actions/event";
+import { Loader } from "./Loader";
 
-// ---- The shape the UI works with (was previously imported from mock) ----
 type Event = {
   id: string;
   title: string;
@@ -22,7 +22,6 @@ type Event = {
   cover: string;
 };
 
-// ---- Convert a DB row -> UI Event ----
 const STATUS_MAP: Record<string, Event["status"]> = {
   upcoming: "Upcoming",
   ongoing: "Live",
@@ -59,7 +58,6 @@ const entryList = ["All", "Free", "Paid"];
 export default function EventsPage() {
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
-
   const [q, setQ] = useState("");
   const [game, setGame] = useState("All");
   const [region, setRegion] = useState("All");
@@ -68,12 +66,18 @@ export default function EventsPage() {
   const [entry, setEntry] = useState("All");
   const [prize, setPrize] = useState(0);
 
-  // Fetch events from Supabase on mount
   useEffect(() => {
     getEvents().then((res) => {
       if (res.data) setEvents(res.data.map(toUiEvent));
       setLoading(false);
     });
+  }, []);
+
+  useEffect(() => {
+    const s = new URLSearchParams(window.location.search).get("status");
+    if (s === "Live" || s === "Upcoming" || s === "Completed") {
+      setStatus(s as typeof statusList[number]);
+    }
   }, []);
 
   const filtered = useMemo(() => events.filter((e) => {
@@ -89,15 +93,12 @@ export default function EventsPage() {
     return true;
   }), [events, q, game, region, status, format, entry, prize]);
 
+
   return (
     <div className="p-6 max-w-[1600px] mx-auto">
-      {/* Header */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-6">
         <div>
           <h1 className="text-3xl md:text-4xl font-bold">Tournaments</h1>
-          <p className="text-muted-foreground mt-1">
-            {loading ? "Loading events..." : `${filtered.length} events match your filters`}
-          </p>
         </div>
 
         <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
@@ -118,7 +119,6 @@ export default function EventsPage() {
           </Link>
         </div>
       </div>
-      {/* Status pills */}
       <div className="flex flex-wrap gap-2 mb-6">
         {statusList.map((s) => (
           <button key={s} onClick={() => setStatus(s)}
@@ -133,7 +133,6 @@ export default function EventsPage() {
       </div>
 
       <div className="grid lg:grid-cols-[280px_1fr] gap-6">
-        {/* Filters */}
         <aside className="rounded-2xl border border-border bg-card/60 backdrop-blur p-5 h-fit lg:sticky lg:top-20 space-y-6">
           <div className="flex items-center gap-2 pb-3 border-b border-border">
             <SlidersHorizontal className="size-4 text-primary" />
@@ -154,8 +153,7 @@ export default function EventsPage() {
             </div>
           </div>
         </aside>
-
-        {/* Grid */}
+        {loading ? <Loader label="Loading events..." /> : (
         <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-5">
           {filtered.map((e) => (
             <Link href={`/events/${e.id}`} key={e.id} className="group rounded-2xl border border-border bg-card/60 backdrop-blur overflow-hidden hover:border-brand transition shadow-card-soft">
@@ -195,6 +193,7 @@ export default function EventsPage() {
             </div>
           )}
         </div>
+        )}
       </div>
     </div>
   );
