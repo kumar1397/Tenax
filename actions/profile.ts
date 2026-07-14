@@ -1,4 +1,4 @@
-
+// Save as app/actions/profile.ts
 'use server'
 
 import { createClient } from '@/utils/supabase/server'
@@ -8,9 +8,10 @@ export async function getMyProfile() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { data: null }
 
+  // Pull the joined org (source of truth) alongside the user row
   const { data, error } = await supabase
     .from('Users')
-    .select('*')
+    .select('*, orgs(id, name, tricode, logo, link)')
     .eq('auth_id', user.id)
     .single()
 
@@ -23,11 +24,8 @@ export type ProfileForm = {
   handle: string
   game: string
   region: string
-  org_name: string
-  org_tricode: string
-  org_link: string
-  org_logo: string   
   player_image: string
+  org_id: number | null
 }
 
 export async function updateProfile(form: ProfileForm) {
@@ -42,11 +40,8 @@ export async function updateProfile(form: ProfileForm) {
       handle: form.handle || null,
       game: form.game || null,
       region: form.region || null,
-      org_name: form.org_name || null,
-      org_tricode: form.org_tricode || null,
-      org_link: form.org_link || null,
-      org_logo: form.org_logo || null,        // NEW
       player_image: form.player_image || null,
+      org_id: form.org_id,          // ← org is now a link, not text
     })
     .eq('auth_id', user.id)
 

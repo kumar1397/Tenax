@@ -6,8 +6,9 @@ import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import { createClient } from "@/utils/supabase/client";
 import { getMyProfile, updateProfile, type ProfileForm } from "@/actions/profile";
+import { listOrgs, createOrg, type Org } from "@/actions/event"; // adjust path if you put org actions elsewhere
 import {
-  Trophy, Gamepad2, Target, Clock, Calendar, MapPin, Settings, LogOut, Shield, Loader2, Save, Upload,
+  Trophy, Gamepad2, Target, Clock, Calendar, MapPin, Settings, LogOut, Shield, Loader2, Save, Upload, Building2,
 } from "lucide-react";
 import { signOut } from "@/actions/auth";
 
@@ -15,8 +16,7 @@ const GAMES = ["", "InvincibleVS", "2XKO", "Valorant", "Dead by Daylight"];
 const REGIONS = ["", "NA", "EU", "APAC", "LATAM", "Global"];
 
 const EMPTY: ProfileForm = {
-  player_name: "", handle: "", game: "", region: "",
-  org_name: "", org_tricode: "", org_link: "", org_logo: "", player_image: "",
+  player_name: "", handle: "", game: "", region: "", player_image: "", org_id: null,
 };
 
 export default function ProfilePage() {
@@ -25,13 +25,20 @@ export default function ProfilePage() {
   const [saving, setSaving] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
+
   const [form, setForm] = useState<ProfileForm>(EMPTY);
   const [stats, setStats] = useState({ mmr: 0, winrate: 0, rank: "", hours: 0 });
   const [joined, setJoined] = useState("");
   const [email, setEmail] = useState("");
-  const [authAvatar, setAuthAvatar] = useState(""); // account image from Google, etc.
+  const [authAvatar, setAuthAvatar] = useState("");
 
-  const update = (k: keyof ProfileForm, v: string) => setForm((f) => ({ ...f, [k]: v }));
+  // Org state
+  const [orgs, setOrgs] = useState<Org[]>([]);
+  const [creatingOrg, setCreatingOrg] = useState(false);
+  const [newOrg, setNewOrg] = useState({ name: "", tricode: "", link: "", logo: "" });
+
+  const update = <K extends keyof ProfileForm>(k: K, v: ProfileForm[K]) =>
+    setForm((f) => ({ ...f, [k]: v }));
 
   useEffect(() => {
     const supabase = createClient();
@@ -44,19 +51,18 @@ export default function ProfilePage() {
       setAuthAvatar(data.user.user_metadata?.avatar_url || data.user.user_metadata?.picture || "");
       setJoined(new Date(data.user.created_at).toLocaleDateString(undefined, { month: "long", year: "numeric" }));
 
-      const res = await getMyProfile();
-      const p = res.data;
+      const [orgRes, profRes] = await Promise.all([listOrgs(), getMyProfile()]);
+      if (orgRes.data) setOrgs(orgRes.data);
+
+      const p = profRes.data;
       if (p) {
         setForm({
           player_name: p.player_name ?? "",
           handle: p.handle ?? "",
           game: p.game ?? "",
           region: p.region ?? "",
-          org_name: p.org_name ?? "",
-          org_tricode: p.org_tricode ?? "",
-          org_link: p.org_link ?? "",
-          org_logo: p.org_logo ?? "",
           player_image: p.player_image ?? "",
+          org_id: p.org_id ?? null,
         });
         setStats({ mmr: p.mmr ?? 0, winrate: p.win_rate ?? 0, rank: p.rank ?? "Unranked", hours: p.hours_played ?? 0 });
       }
@@ -72,18 +78,14 @@ export default function ProfilePage() {
     const ext = file.name.split(".").pop();
     const path = `${crypto.randomUUID()}.${ext}`;
     const { error } = await supabase.storage.from("avatars").upload(path, file);
-    if (error) {
-      setUploadingAvatar(false);
-      toast.error(error.message);
-      return;
-    }
+    if (error) { setUploadingAvatar(false); toast.error(error.message); return; }
     const { data } = supabase.storage.from("avatars").getPublicUrl(path);
     update("player_image", data.publicUrl);
     setUploadingAvatar(false);
     toast.success("Image uploaded — Save to keep it");
   }
 
-  async function handleOrgLogoFile(e: React.ChangeEvent<HTMLInputElement>) {
+  async function handleNewOrgLogo(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
     setUploadingLogo(true);
@@ -91,38 +93,50 @@ export default function ProfilePage() {
     const ext = file.name.split(".").pop();
     const path = `${crypto.randomUUID()}.${ext}`;
     const { error } = await supabase.storage.from("org-logos").upload(path, file);
-    if (error) {
-      setUploadingLogo(false);
-      toast.error(error.message);
-      return;
-    }
+    if (error) { setUploadingLogo(false); toast.error(error.message); return; }
     const { data } = supabase.storage.from("org-logos").getPublicUrl(path);
-    update("org_logo", data.publicUrl);
+    setNewOrg((s) => ({ ...s, logo: data.publicUrl }));
     setUploadingLogo(false);
-    toast.success("Logo uploaded — Save to keep it");
   }
 
   async function handleSave() {
     setSaving(true);
-    const res = await updateProfile(form);
+
+    let orgId = form.org_id;
+
+    // Creating a new org first, then linking to it
+    if (creatingOrg) {
+      if (!newOrg.name.trim()) { setSaving(false); toast.error("Enter an org name"); return; }
+      const r = await createOrg({
+        name: newOrg.name, tricode: newOrg.tricode, link: newOrg.link, logo: newOrg.logo,
+      });
+      if (r.error || !r.data) { setSaving(false); toast.error(r.error ?? "Couldn't create org"); return; }
+      orgId = r.data.id;
+      // add to local list & reset the create form
+      setOrgs((prev) => (prev.some((o) => o.id === r.data!.id) ? prev : [...prev, r.data!]));
+      setCreatingOrg(false);
+      setNewOrg({ name: "", tricode: "", link: "", logo: "" });
+      update("org_id", orgId);
+    }
+
+    const res = await updateProfile({ ...form, org_id: orgId });
     setSaving(false);
     if (res.error) toast.error(res.error);
     else toast.success("Profile saved");
   }
 
   async function handleSignOut() {
-    await signOut();
-    toast.success("Signed out");
-    router.push("/");
-    router.refresh();
+    const supabase = createClient();    
+    await supabase.auth.signOut();
+    window.location.href = "/";          
   }
 
   if (loading) return <div className="p-10 text-muted-foreground">Loading profile…</div>;
 
   const displayName = form.player_name || form.handle || email.split("@")[0];
   const initial = (displayName[0] ?? "?").toUpperCase();
-  // Priority: uploaded image → account (Google) image → initial
   const avatarSrc = form.player_image || authAvatar;
+  const currentOrg = orgs.find((o) => o.id === form.org_id) ?? null;
 
   const statCards = [
     { label: "MMR", value: stats.mmr.toLocaleString(), icon: Trophy },
@@ -163,6 +177,12 @@ export default function ProfilePage() {
           <div className="mt-1 text-sm text-muted-foreground flex flex-wrap items-center gap-3">
             <span>{form.handle ? `@${form.handle}` : email}</span>
             {form.region && <span className="inline-flex items-center gap-1"><MapPin className="size-3.5" /> {form.region}</span>}
+            {currentOrg && (
+              <span className="inline-flex items-center gap-1">
+                {currentOrg.logo ? <img src={currentOrg.logo} alt="" className="size-4 rounded" /> : <Building2 className="size-3.5" />}
+                {currentOrg.tricode || currentOrg.name}
+              </span>
+            )}
             <span className="inline-flex items-center gap-1"><Calendar className="size-3.5" /> Joined {joined}</span>
           </div>
         </div>
@@ -176,7 +196,7 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      {/* Stats (read-only, system-managed) */}
+      {/* Stats */}
       <div className="mt-8 grid grid-cols-2 md:grid-cols-4 gap-3">
         {statCards.map((s) => (
           <div key={s.label} className="rounded-2xl border border-border bg-card/60 backdrop-blur p-4">
@@ -211,37 +231,75 @@ export default function ProfilePage() {
             <Select value={form.region} onChange={(v) => update("region", v)} options={REGIONS} placeholder="Select a region" />
           </Field>
 
-          <Field label="Organization" hint="The org/team you belong to">
-            <Input value={form.org_name} onChange={(v) => update("org_name", v)} placeholder="e.g. Sentinels" />
-          </Field>
-          <Field label="Org Tricode">
-            <Input value={form.org_tricode} onChange={(v) => update("org_tricode", v)} placeholder="e.g. SEN" />
+          {/* Organization: pick existing or create new */}
+          <Field label="Organization" hint="Pick your org, or create a new one">
+            <select
+              value={creatingOrg ? "__create__" : (form.org_id ? String(form.org_id) : "")}
+              onChange={(e) => {
+                const v = e.target.value;
+                if (v === "__create__") { setCreatingOrg(true); update("org_id", null); }
+                else if (v === "") { setCreatingOrg(false); update("org_id", null); }
+                else { setCreatingOrg(false); update("org_id", Number(v)); }
+              }}
+              className="w-full bg-secondary/60 border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-brand"
+            >
+              <option value="">No organization</option>
+              {orgs.map((o) => (
+                <option key={o.id} value={o.id}>{o.name}{o.tricode ? ` (${o.tricode})` : ""}</option>
+              ))}
+              <option value="__create__">+ Create new org</option>
+            </select>
           </Field>
 
-          <Field label="Org Link">
-            <Input value={form.org_link} onChange={(v) => update("org_link", v)} placeholder="https://..." />
+          {/* Selected existing org preview */}
+          <Field label="Selected Org">
+            {creatingOrg ? (
+              <p className="text-sm text-muted-foreground py-2.5">Creating a new org below…</p>
+            ) : currentOrg ? (
+              <div className="flex items-center gap-2 py-2">
+                {currentOrg.logo
+                  ? <img src={currentOrg.logo} alt="" className="size-8 rounded bg-secondary" />
+                  : <div className="size-8 rounded bg-secondary grid place-items-center"><Building2 className="size-4 text-muted-foreground" /></div>}
+                <span className="text-sm font-semibold">{currentOrg.name}{currentOrg.tricode ? ` · ${currentOrg.tricode}` : ""}</span>
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground py-2.5">No org selected</p>
+            )}
           </Field>
 
-          <Field label="Org Logo" hint="Upload your team/org logo">
-            <div className="flex items-center gap-3">
-              {form.org_logo
-                ? <img src={form.org_logo} alt="" className="size-12 rounded-lg object-cover bg-secondary shrink-0" />
-                : <div className="size-12 rounded-lg bg-secondary grid place-items-center text-muted-foreground text-[10px] shrink-0">Logo</div>}
-              <label className="flex-1 flex items-center gap-2 bg-secondary/60 border border-dashed border-border rounded-lg px-3 py-2.5 text-sm cursor-pointer hover:border-brand transition">
-                <Upload className="size-4 text-muted-foreground" />
-                <span className="text-muted-foreground">{uploadingLogo ? "Uploading..." : "Upload logo"}</span>
-                <input type="file" accept="image/*" onChange={handleOrgLogoFile} className="hidden" disabled={uploadingLogo} />
-              </label>
+          {/* Create-new-org fields */}
+          {creatingOrg && (
+            <div className="md:col-span-2 grid md:grid-cols-2 gap-5 rounded-xl border border-dashed border-border p-4">
+              <Field label="Org Name">
+                <Input value={newOrg.name} onChange={(v) => setNewOrg((s) => ({ ...s, name: v }))} placeholder="e.g. Sentinels" />
+              </Field>
+              <Field label="Org Tricode">
+                <Input value={newOrg.tricode} onChange={(v) => setNewOrg((s) => ({ ...s, tricode: v }))} placeholder="e.g. SEN" />
+              </Field>
+              <Field label="Org Link">
+                <Input value={newOrg.link} onChange={(v) => setNewOrg((s) => ({ ...s, link: v }))} placeholder="https://..." />
+              </Field>
+              <Field label="Org Logo" hint="Uploaded once for this org">
+                <div className="flex items-center gap-3">
+                  {newOrg.logo
+                    ? <img src={newOrg.logo} alt="" className="size-12 rounded-lg object-cover bg-secondary shrink-0" />
+                    : <div className="size-12 rounded-lg bg-secondary grid place-items-center text-muted-foreground text-[10px] shrink-0">Logo</div>}
+                  <label className="flex-1 flex items-center gap-2 bg-secondary/60 border border-dashed border-border rounded-lg px-3 py-2.5 text-sm cursor-pointer hover:border-brand transition">
+                    <Upload className="size-4 text-muted-foreground" />
+                    <span className="text-muted-foreground">{uploadingLogo ? "Uploading..." : "Upload logo"}</span>
+                    <input type="file" accept="image/*" onChange={handleNewOrgLogo} className="hidden" disabled={uploadingLogo} />
+                  </label>
+                </div>
+              </Field>
             </div>
-          </Field>
+          )}
 
+          {/* Profile image */}
           <Field label="Profile Image" hint="Upload a photo — otherwise your account image is used">
             <div className="flex items-center gap-3">
-              <img
-                src={avatarSrc}
-                alt=""
-                className="size-12 rounded-lg object-cover bg-secondary shrink-0"
-              />
+              {avatarSrc
+                ? <img src={avatarSrc} alt="" className="size-12 rounded-lg object-cover bg-secondary shrink-0" />
+                : <div className="size-12 rounded-lg bg-gradient-brand grid place-items-center text-white font-bold shrink-0">{initial}</div>}
               <label className="flex-1 flex items-center gap-2 bg-secondary/60 border border-dashed border-border rounded-lg px-3 py-2.5 text-sm cursor-pointer hover:border-brand transition">
                 <Upload className="size-4 text-muted-foreground" />
                 <span className="text-muted-foreground">{uploadingAvatar ? "Uploading..." : "Upload new image"}</span>

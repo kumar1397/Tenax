@@ -1,104 +1,47 @@
-"use client";
+// app/orgs/page.tsx  (Server Component — fetches + aggregates, then passes down)
+import type { Metadata } from "next";
+import OrgLeaderboard from "@/components/Organisation";
+import { createPublicClient } from "@/utils/supabase/public";
 
-import { useEffect, useMemo, useState } from "react";
-import { getOrgStandings, type OrgRow } from "@/actions/event";
-import { Trophy, Medal, Crown, Building2 } from "lucide-react";
-import { Loader } from "@/components/Loader";
-const medalClass = (rank: number) => {
-  if (rank === 1) return "from-yellow-300 to-amber-500 text-black";
-  if (rank === 2) return "from-slate-200 to-slate-400 text-black";
-  if (rank === 3) return "from-amber-600 to-amber-800 text-white";
-  return "from-secondary to-secondary text-muted-foreground";
+export const metadata: Metadata = {
+  title: "Organizations",
+  description: "Team and organization standings ranked by average member MMR.",
 };
 
-export default function OrgLeaderboardPage() {
-  const [orgs, setOrgs] = useState<OrgRow[]>([]);
-  const [loading, setLoading] = useState(true);
+export const revalidate = 60;
 
-  useEffect(() => {
-    getOrgStandings().then((res) => {
-      if (res.data) setOrgs(res.data);
-      setLoading(false);
-    });
-  }, []);
+export default async function Page() {
+  const supabase = createPublicClient();
 
-  // Ranked strictly by average member MMR
-  const ranked = useMemo(() => [...orgs].sort((a, b) => b.avgMmr - a.avgMmr), [orgs]);
-  const top3 = ranked.slice(0, 3);
+  const [{ data: orgs }, { data: users }] = await Promise.all([
+    supabase.from("orgs").select("id, name, tricode, logo, link"),
+    supabase.from("Users").select("org_id, mmr"),
+  ]);
 
-  return (
-    <div className="p-6 max-w-[1200px] mx-auto">
-      <div className="mb-8">
-        <h1 className="text-3xl md:text-4xl font-bold">Organizations</h1>
-      </div>
+  // Aggregate members + avg MMR per org
+  const agg = new Map<number, { members: number; total: number }>();
+  for (const u of users ?? []) {
+    if (!u.org_id) continue;
+    const e = agg.get(u.org_id) ?? { members: 0, total: 0 };
+    e.members += 1;
+    e.total += u.mmr ?? 0;
+    agg.set(u.org_id, e);
+  }
 
-      {/* Podium */}
-      {loading ? <Loader label="Loading standings..." /> : (
-          <>
-            {top3.length === 3 && (
-              <div className="grid md:grid-cols-3 gap-4 mb-8 items-end">
-                {[top3[1], top3[0], top3[2]].map((o, i) => {
-                  const rank = i === 1 ? 1 : i === 0 ? 2 : 3;
-                  const isFirst = rank === 1;
-                  return (
-                    <div key={o.name} className={[
-                      "relative rounded-2xl border p-5 text-center overflow-hidden",
-                      isFirst ? "md:-mt-4 bg-gradient-brand-soft border-brand shadow-glow" : "bg-card/60 backdrop-blur border-border",
-                    ].join(" ")}>
-                      <div className={["absolute top-3 left-3 size-9 rounded-xl grid place-items-center bg-gradient-to-br", medalClass(rank)].join(" ")}>
-                        <Medal className="size-5" />
-                      </div>
-                      {isFirst && <Crown className="absolute top-3 right-3 size-5 text-primary" />}
-                      {o.logo
-                        ? <img src={o.logo} alt="" className="size-16 mx-auto rounded-2xl bg-secondary" />
-                        : <div className="size-16 mx-auto rounded-2xl bg-secondary grid place-items-center"><Building2 className="size-7 text-muted-foreground" /></div>}
-                      <div className="mt-3 font-bold text-lg truncate">{o.name}</div>
-                      <div className="text-xs text-muted-foreground">{o.tricode} · {o.members} players</div>
-                      <div className="mt-3 text-2xl font-bold text-gradient-brand">{o.avgMmr.toLocaleString()}</div>
-                      <div className="text-xs text-muted-foreground">avg MMR</div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </>
-      )}
+  const rows = (orgs ?? [])
+    .map((o) => {
+      const a = agg.get(o.id) ?? { members: 0, total: 0 };
+      return {
+        name: o.name,
+        tricode: o.tricode ?? "",
+        logo: o.logo ?? "",
+        link: o.link ?? "",
+        members: a.members,
+        totalMmr: a.total,
+        avgMmr: a.members ? Math.round(a.total / a.members) : 0,
+      };
+    })
+    .filter((o) => o.members > 0);
 
-      {/* Table */}
-      {loading ? <Loader label="Loading standings..." /> : (
-        <div className="rounded-2xl border border-border bg-card/60 backdrop-blur overflow-hidden">
-          <div className="grid grid-cols-[60px_1fr_120px_140px] px-4 py-3 text-[11px] uppercase tracking-wider text-muted-foreground font-bold border-b border-border bg-secondary/40">
-            <div>Rank</div><div>Org</div><div>Members</div><div className="text-right">Avg MMR</div>
-          </div>
-          <div className="divide-y divide-border">
-            {ranked.map((o, i) => (
-              <div key={o.name} className="grid grid-cols-[60px_1fr_120px_140px] items-center px-4 py-3 hover:bg-secondary/30 transition">
-                {i < 3 ? (
-                  <div className={["size-8 rounded-lg grid place-items-center bg-gradient-to-br", medalClass(i + 1)].join(" ")}><Medal className="size-4" /></div>
-                ) : (
-                  <div className="font-bold text-muted-foreground">#{i + 1}</div>
-                )}
-                <div className="flex items-center gap-3 min-w-0">
-                  {o.logo
-                    ? <img src={o.logo} alt="" className="size-9 rounded-lg bg-secondary shrink-0" />
-                    : <div className="size-9 rounded-lg bg-secondary grid place-items-center shrink-0"><Building2 className="size-4 text-muted-foreground" /></div>}
-                  <div className="min-w-0">
-                    <div className="font-bold truncate">{o.name}</div>
-                    <div className="text-[11px] text-muted-foreground">{o.tricode}</div>
-                  </div>
-                </div>
-                <div className="text-sm">{o.members}</div>
-                <div className="text-right font-bold text-gradient-brand">{o.avgMmr.toLocaleString()}</div>
-              </div>
-            ))}
-            {!loading && ranked.length === 0 && (
-              <div className="py-16 text-center text-muted-foreground">
-                <Trophy className="size-10 mx-auto mb-2 opacity-30" />No organizations yet.
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-    </div>
-  );
+  return <OrgLeaderboard initialOrgs={rows} />;
 }

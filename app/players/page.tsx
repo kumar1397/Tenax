@@ -1,4 +1,4 @@
-// app/players/page.tsx  (Server Component — fetches, then passes data down)
+// app/players/page.tsx  (join orgs so player rows carry org info)
 import type { Metadata } from "next";
 import UsersPage from "@/components/Users";
 import { createPublicClient } from "@/utils/supabase/public";
@@ -14,7 +14,7 @@ export default async function Page() {
   const supabase = createPublicClient();
   const { data } = await supabase
     .from("Users")
-    .select("*")
+    .select("*, orgs(id, name, tricode, logo, link)")
     .order("mmr", { ascending: false });
 
   return <UsersPage initialPlayers={data ?? []} />;
