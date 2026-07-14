@@ -50,8 +50,7 @@ function toRoster(rows: any[]): RosterEntry[] {
     org: r.Users?.org_name ?? "",
     team: r.team ?? null,
     avatar:
-      r.Users?.player_image ||
-      `https://api.dicebear.com/9.x/bottts-neutral/svg?seed=${r.Users?.player_name ?? "x"}`,
+      r.Users?.player_image,
   }));
 }
 
@@ -70,11 +69,13 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 export default async function EventDetail({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
 
-  const eventRes = await getEvent(Number(id));
+  const [eventRes, participantsRes] = await Promise.all([
+    getEvent(Number(id)),
+    getEventParticipants(Number(id)),
+  ]);
   if (!eventRes.data) notFound();
 
   const event = toUiEvent(eventRes.data);
-  const participantsRes = await getEventParticipants(Number(id));
   const roster = toRoster(participantsRes.data ?? []);
 
   return <EventDetailClient event={event} roster={roster} />;

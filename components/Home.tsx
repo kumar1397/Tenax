@@ -1,9 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
-import { getEvents } from "@/actions/event";
 import { HeroAnimation } from "@/components/HeroAnimation";
 
 type Event = {
@@ -45,16 +44,9 @@ function toUiEvent(row: any): Event {
   };
 }
 
-export default function Home() {
-  const [events, setEvents] = useState<Event[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    getEvents().then((res) => {
-      if (res.data) setEvents(res.data.map(toUiEvent));
-      setLoading(false);
-    });
-  }, []);
+export default function Home({ initialEvents }: { initialEvents: any[] }) {
+  // Data arrives from the server — map once, no fetch, no loading state
+  const [events] = useState<Event[]>(() => (initialEvents ?? []).map(toUiEvent));
 
   const featured = events[0];
 
@@ -91,9 +83,7 @@ export default function Home() {
 
       <section>
         <SectionHeader title="Live Right Now" link="/events?status=Live" showLink={liveAll.length > 3} />
-        {loading ? (
-          <p className="text-center text-muted-foreground py-8">Loading events...</p>
-        ) : live.length === 0 ? (
+        {live.length === 0 ? (
           <p className="text-center text-muted-foreground py-8">No live tournaments right now.</p>
         ) : (
           <div className="grid md:grid-cols-3 gap-4">
@@ -103,10 +93,8 @@ export default function Home() {
       </section>
 
       <section className="my-20">
-        <SectionHeader title="Upcoming Tournaments" link="/events?status=Upcoming" showLink={upcomingAll.length > 4} /> 
-        {loading ? (
-          <p className="text-center text-muted-foreground py-8">Loading events...</p>
-        ) : upcoming.length === 0 ? (
+        <SectionHeader title="Upcoming Tournaments" link="/events?status=Upcoming" showLink={upcomingAll.length > 4} />
+        {upcoming.length === 0 ? (
           <p className="text-center text-muted-foreground py-8">No upcoming tournaments yet.</p>
         ) : (
           <div className="grid sm:grid-cols-2 gap-4">

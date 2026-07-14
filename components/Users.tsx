@@ -1,9 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { getUsers } from "@/actions/event";
+import { useMemo, useState } from "react";
 import { Search, Trophy, Crown, TrendingUp, ChevronDown } from "lucide-react";
-import { Loader } from "./Loader";
 
 type Player = {
   id: string;
@@ -35,7 +33,7 @@ function toPlayer(row: any): Player {
     winrate: row.win_rate ?? 0,
     hours: row.hours_played ?? 0,
     status: row.status ?? "Offline",
-    avatar: row.player_image ?? "",   
+    avatar: row.player_image ?? "",
     orgName: row.org_name ?? "",
     orgTricode: row.org_tricode ?? "",
     orgLogo: row.org_logo ?? "",
@@ -65,22 +63,15 @@ const sortOpts: { value: SortKey; label: string }[] = [
   { value: "org", label: "Org" },
 ];
 
-export default function UsersPage() {
-  const [players, setPlayers] = useState<Player[]>([]);
-  const [loading, setLoading] = useState(true);
+export default function UsersPage({ initialPlayers }: { initialPlayers: any[] }) {
+  // Data arrives from the server — map once, no fetch, no loading state
+  const [players] = useState<Player[]>(() => (initialPlayers ?? []).map(toPlayer));
 
   const [q, setQ] = useState("");
   const [game, setGame] = useState("All");
   const [region, setRegion] = useState("All");
   const [org, setOrg] = useState("All");
   const [sort, setSort] = useState<SortKey>("mmr");
-
-  useEffect(() => {
-    getUsers().then((res) => {
-      if (res.data) setPlayers(res.data.map(toPlayer));
-      setLoading(false);
-    });
-  }, []);
 
   const orgOpts = useMemo(() => {
     const names = Array.from(new Set(players.map((p) => p.orgName).filter(Boolean))).sort();
@@ -120,9 +111,7 @@ export default function UsersPage() {
         </div>
       </div>
 
-      {loading ? (
-        <Loader label="Loading players..." />
-      ) : top3.length === 3 ? (
+      {top3.length === 3 && (
         <div className="grid md:grid-cols-3 gap-4 mb-8">
           {[top3[1], top3[0], top3[2]].map((p, idx) => {
             const place = idx === 1 ? 1 : idx === 0 ? 2 : 3;
@@ -145,7 +134,7 @@ export default function UsersPage() {
             );
           })}
         </div>
-      ) : null}
+      )}
 
       <div className="flex flex-wrap items-center gap-3 mb-5">
         <Select label="Game" value={game} onChange={setGame} options={gameOpts} />
@@ -164,7 +153,7 @@ export default function UsersPage() {
 
       <div className="rounded-2xl border border-border bg-card/60 backdrop-blur overflow-hidden">
         <div className="grid grid-cols-[50px_1fr_130px_120px_90px_110px_80px] px-4 py-3 text-[11px] uppercase tracking-wider text-muted-foreground font-bold border-b border-border bg-secondary/40">
-          <div>Rank</div><div>Player</div><div>Org</div><div>Region</div><div className="text-right">MMR</div><div className="text-right">Win %</div>
+          <div>Rank</div><div>Player</div><div>Org</div><div>Game</div><div>Region</div><div className="text-right">MMR</div><div className="text-right">Win %</div>
         </div>
         <div className="divide-y divide-border">
           {filtered.map((p, i) => (
@@ -187,6 +176,7 @@ export default function UsersPage() {
                 {p.orgLogo && <img src={p.orgLogo} alt="" className="size-6 rounded bg-secondary shrink-0" />}
                 <span className="text-sm font-semibold truncate">{p.orgTricode || "\u2014"}</span>
               </div>
+              <div className="text-sm truncate">{p.game}</div>
               <div className="text-sm text-muted-foreground">{p.region}</div>
               <div className="text-right">
                 <div className="font-bold text-gradient-brand">{p.mmr.toLocaleString()}</div>
@@ -199,7 +189,7 @@ export default function UsersPage() {
               </div>
             </div>
           ))}
-          {!loading && filtered.length === 0 && (
+          {filtered.length === 0 && (
             <div className="py-16 text-center text-muted-foreground">
               <Trophy className="size-10 mx-auto mb-2 opacity-30" />No players match your filters.
             </div>

@@ -238,7 +238,7 @@ export default function ProfilePage() {
           <Field label="Profile Image" hint="Upload a photo — otherwise your account image is used">
             <div className="flex items-center gap-3">
               <img
-                src={avatarSrc || `https://api.dicebear.com/9.x/bottts-neutral/svg?seed=${email || "x"}`}
+                src={avatarSrc}
                 alt=""
                 className="size-12 rounded-lg object-cover bg-secondary shrink-0"
               />

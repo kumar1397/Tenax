@@ -1,10 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { Search, SlidersHorizontal, Trophy, Users2, Calendar, MapPin, Plus } from "lucide-react";
-import { getEvents } from "@/actions/event";
-import { Loader } from "./Loader";
 
 type Event = {
   id: string;
@@ -55,30 +53,24 @@ const statusList: Array<"All" | "Live" | "Upcoming" | "Completed"> = ["All", "Li
 const formatList = ["All", "Single Elim", "Double Elim", "Round Robin", "Swiss"];
 const entryList = ["All", "Free", "Paid"];
 
-export default function EventsPage() {
-  const [events, setEvents] = useState<Event[]>([]);
-  const [loading, setLoading] = useState(true);
+// Read ?status= once, synchronously, so the correct pill is active on first paint
+function initialStatus(): typeof statusList[number] {
+  if (typeof window === "undefined") return "All";
+  const s = new URLSearchParams(window.location.search).get("status");
+  return s === "Live" || s === "Upcoming" || s === "Completed" ? s : "All";
+}
+
+export default function EventsPage({ initialEvents }: { initialEvents: any[] }) {
+  // Data arrives from the server — map once, no fetch, no loading state
+  const [events] = useState<Event[]>(() => (initialEvents ?? []).map(toUiEvent));
+
   const [q, setQ] = useState("");
   const [game, setGame] = useState("All");
   const [region, setRegion] = useState("All");
-  const [status, setStatus] = useState<typeof statusList[number]>("All");
+  const [status, setStatus] = useState<typeof statusList[number]>(initialStatus);
   const [format, setFormat] = useState("All");
   const [entry, setEntry] = useState("All");
   const [prize, setPrize] = useState(0);
-
-  useEffect(() => {
-    getEvents().then((res) => {
-      if (res.data) setEvents(res.data.map(toUiEvent));
-      setLoading(false);
-    });
-  }, []);
-
-  useEffect(() => {
-    const s = new URLSearchParams(window.location.search).get("status");
-    if (s === "Live" || s === "Upcoming" || s === "Completed") {
-      setStatus(s as typeof statusList[number]);
-    }
-  }, []);
 
   const filtered = useMemo(() => events.filter((e) => {
     if (q && !e.title.toLowerCase().includes(q.toLowerCase())) return false;
@@ -92,7 +84,6 @@ export default function EventsPage() {
     if (prizeNum < prize) return false;
     return true;
   }), [events, q, game, region, status, format, entry, prize]);
-
 
   return (
     <div className="p-6 max-w-[1600px] mx-auto">
@@ -153,7 +144,7 @@ export default function EventsPage() {
             </div>
           </div>
         </aside>
-        {loading ? <Loader label="Loading events..." /> : (
+
         <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-5">
           {filtered.map((e) => (
             <Link href={`/events/${e.id}`} key={e.id} className="group rounded-2xl border border-border bg-card/60 backdrop-blur overflow-hidden hover:border-brand transition shadow-card-soft">
@@ -186,14 +177,13 @@ export default function EventsPage() {
               </div>
             </Link>
           ))}
-          {!loading && filtered.length === 0 && (
+          {filtered.length === 0 && (
             <div className="col-span-full py-20 text-center text-muted-foreground">
               <Trophy className="size-12 mx-auto mb-3 opacity-30" />
               No tournaments match your filters.
             </div>
           )}
         </div>
-        )}
       </div>
     </div>
   );
