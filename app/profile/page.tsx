@@ -1,16 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import { createClient } from "@/utils/supabase/client";
 import { getMyProfile, updateProfile, type ProfileForm } from "@/actions/profile";
 import { listOrgs, createOrg, type Org } from "@/actions/event"; // adjust path if you put org actions elsewhere
 import {
-  Trophy, Gamepad2, Target, Clock, Calendar, MapPin, Settings, LogOut, Shield, Loader2, Save, Upload, Building2,
+  Trophy, Gamepad2, Target, Clock, Calendar, MapPin, LogOut, Shield, Loader2, Save, Upload, Building2,
 } from "lucide-react";
-import { signOut } from "@/actions/auth";
 
 const GAMES = ["", "InvincibleVS", "2XKO", "Valorant", "Dead by Daylight"];
 const REGIONS = ["", "NA", "EU", "APAC", "LATAM", "Global"];
@@ -157,7 +155,7 @@ export default function ProfilePage() {
       <div className="flex flex-col md:flex-row md:items-end gap-5 -mt-14 px-2 md:px-6">
         <div className="relative">
           {avatarSrc ? (
-            <img src={avatarSrc} alt="" className="size-28 md:size-32 rounded-2xl object-cover shadow-glow ring-4 ring-background bg-secondary" />
+            <img src={avatarSrc} alt="" className="size-28 md:size-32 rounded-2xl object-cover shadow-glow ring-4 ring-background" />
           ) : (
             <div className="size-28 md:size-32 rounded-2xl bg-gradient-brand grid place-items-center text-white font-bold text-4xl shadow-glow ring-4 ring-background">
               {initial}
@@ -187,11 +185,8 @@ export default function ProfilePage() {
           </div>
         </div>
         <div className="flex gap-2">
-          <Link href="/" className="inline-flex items-center gap-2 bg-card border border-border px-3 py-2 rounded-lg text-sm hover:bg-secondary/40">
-            <Settings className="size-4" />
-          </Link>
-          <button onClick={handleSignOut} className="inline-flex items-center gap-2 bg-card border border-border px-3 py-2 rounded-lg text-sm hover:bg-secondary/40" title="Sign out">
-            <LogOut className="size-4" />
+          <button onClick={handleSignOut} className="inline-flex items-center gap-2 bg-card border border-border px-3 py-2 rounded-lg text-sm hover:bg-secondary/40">
+            <LogOut className="size-4" /> Sign out
           </button>
         </div>
       </div>

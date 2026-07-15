@@ -16,49 +16,52 @@ const columns = [
 
 export function Footer() {
   return (
-    <footer className="border-t border-border bg-card/30 backdrop-blur mt-12">
-      <div className="max-w-[1600px] mx-auto px-6 py-12">
-        <div className="grid gap-10 lg:grid-cols-[1.6fr_1fr_1fr_1fr]">
+    <footer className="border-t border-border bg-card/30 backdrop-blur mt-8 sm:mt-12">
+      <div className="max-w-[1600px] mx-auto px-6 py-8 sm:py-12">
+        <div className="grid gap-6 sm:gap-10 lg:grid-cols-[1.6fr_1fr_1fr_1fr]">
           {/* Brand */}
           <div>
             <Link href="/" className="flex items-center gap-2 w-fit">
-              <div className="size-9 rounded-lg bg-gradient-brand grid place-items-center shadow-glow">
-                <Swords className="size-5 text-white" />
+              <div className="size-8 sm:size-9 rounded-lg bg-gradient-brand grid place-items-center shadow-glow">
+                <Swords className="size-4 sm:size-5 text-white" />
               </div>
-              <span className="font-display font-bold text-lg tracking-tight">Tenax</span>
+              <span className="font-display font-bold text-base sm:text-lg tracking-tight">Tenax</span>
             </Link>
-            <p className="mt-4 text-sm text-muted-foreground max-w-xs leading-relaxed">
+            <p className="mt-3 sm:mt-4 text-[11px] sm:text-sm text-muted-foreground max-w-xs leading-relaxed">
               Full-service esports tournaments built to turn competition into opportunity — for every player and creator.
             </p>
-            <div className="mt-5 flex gap-2">
+            <div className="mt-3 sm:mt-5 flex gap-2">
               {socials.map((s) => (
                 <a key={s.label} href={s.href} aria-label={s.label}
-                  className="size-9 rounded-lg bg-secondary/60 border border-border grid place-items-center text-muted-foreground hover:text-white hover:border-brand hover:bg-gradient-brand transition">
+                  className="size-8 sm:size-9 rounded-lg bg-secondary/60 border border-border grid place-items-center text-muted-foreground hover:text-white hover:border-brand hover:bg-gradient-brand transition">
                   <svg viewBox="0 0 24 24" className="size-4" fill="currentColor"><path d={s.path} /></svg>
                 </a>
               ))}
             </div>
           </div>
 
-          {/* Link columns */}
-          {columns.map((col) => (
-            <div key={col.heading}>
-              <div className="text-xs font-bold uppercase tracking-[0.16em] text-muted-foreground mb-3">{col.heading}</div>
-              <ul className="space-y-2">
-                {col.links.map((l) => (
-                  <li key={l.label}>
-                    <Link href={l.href} className="text-sm text-muted-foreground hover:text-primary transition">{l.label}</Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
+          {/* Link columns — side by side on mobile to keep the footer short,
+              flattened back into the parent grid row from lg via `contents` */}
+          <div className="grid grid-cols-3 gap-4 lg:contents">
+            {columns.map((col) => (
+              <div key={col.heading}>
+                <div className="text-[10px] sm:text-xs font-bold uppercase tracking-[0.16em] text-muted-foreground mb-2 sm:mb-3">{col.heading}</div>
+                <ul className="space-y-1.5 sm:space-y-2">
+                  {col.links.map((l) => (
+                    <li key={l.label}>
+                      <Link href={l.href} className="text-xs sm:text-sm text-muted-foreground hover:text-primary transition">{l.label}</Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* Bottom bar */}
-        <div className="mt-10 pt-6 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-3">
-          <p className="text-xs text-muted-foreground">© {new Date().getFullYear()} Tenax. All rights reserved.</p>
-          <div className="flex items-center gap-5 text-xs text-muted-foreground">
+        <div className="mt-6 pt-4 sm:mt-10 sm:pt-6 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-3">
+          <p className="text-[11px] sm:text-xs text-muted-foreground">© {new Date().getFullYear()} Tenax. All rights reserved.</p>
+          <div className="flex items-center gap-5 text-[11px] sm:text-xs text-muted-foreground">
             <Link href="#" className="hover:text-primary transition">Terms</Link>
             <Link href="#" className="hover:text-primary transition">Privacy</Link>
             <Link href="#" className="hover:text-primary transition">Cookies</Link>

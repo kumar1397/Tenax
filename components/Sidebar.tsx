@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Home, Trophy, Users, Plus, Info, Earth } from "lucide-react";
 
-const main = [
+export const main = [
   { title: "Home", url: "/", icon: Home },
   { title: "Events", url: "/events", icon: Trophy },
   { title: "Players", url: "/players", icon: Users },
@@ -13,16 +13,19 @@ const main = [
   { title: "About Us", url: "/about", icon: Info },
 ];
 
-
-export function AppSidebar() {
+export function useActiveUrl() {
   const pathname = usePathname();
   const matches = (url: string) =>
     url === "/" ? pathname === "/" : pathname === url || pathname.startsWith(url + "/");
-  const activeUrl = main
+  return main
     .map((i) => i.url)
     .filter(matches)
     .sort((a, b) => b.length - a.length)[0];
+}
 
+
+export function AppSidebar() {
+  const activeUrl = useActiveUrl();
   const isActive = (url: string) => url === activeUrl;
 
   return (

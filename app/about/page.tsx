@@ -9,7 +9,7 @@ const sponsors = [
 export default function About() {
     return (
         <>
-            <section className="relative overflow-hidden rounded-3xl border border-border bg-card/60 backdrop-blur p-8 md:p-12 mx-4">
+            <section className="relative overflow-hidden rounded-3xl border border-border bg-card/60 backdrop-blur p-8 md:p-12 mx-4 mt-6 md:mt-0">
                 {/* soft crimson glow accent */}
                 <div className="pointer-events-none absolute -top-24 -right-24 size-72 rounded-full bg-gradient-brand-soft blur-3xl opacity-60" />
 
@@ -29,7 +29,7 @@ export default function About() {
             </section>
 
             <section>
-                <div className="text-center max-w-2xl mx-auto mb-8">
+                <div className="text-center max-w-2xl mx-auto mb-8 px-4">
                     <div className="inline-flex items-center gap-2 px-3 py-1 mt-12 rounded-full bg-secondary border border-border text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
                         <Award className="size-3.5 text-primary" /> Our Achievements
                     </div>
@@ -62,16 +62,16 @@ export default function About() {
                     </p>
                 </div>
 
-                <div className="mt-10 flex flex-wrap justify-center gap-4">
+                <div className="mt-10 flex gap-4 overflow-x-auto flex-nowrap justify-start sm:flex-wrap sm:justify-center sm:overflow-visible [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                     {sponsors.map((s) => (
                         <div
                             key={s.name}
-                            className="group flex items-center justify-center rounded-2xl border border-border bg-secondary/40 p-6 w-40 aspect-[3/2] hover:border-brand transition"
+                            className="group shrink-0 flex items-center justify-center rounded-2xl border border-border bg-secondary/40 p-6 w-52 sm:w-40 aspect-[3/2] hover:border-brand transition"
                         >
                             <img
                                 src={s.src}
                                 alt={s.name}
-                                className="max-h-16 max-w-full w-auto object-contain"
+                                className="max-h-20 sm:max-h-16 max-w-full w-auto object-contain"
                             />
                         </div>
                     ))}
@@ -83,9 +83,9 @@ export default function About() {
 
 function MiniStat({ label, value }: { label: string; value: string }) {
     return (
-        <div className="rounded-2xl border border-border bg-card/60 backdrop-blur p-4 hover:border-brand transition flex flex-col items-center justify-center">
-            <div className="mt-3 text-2xl font-bold">{value}</div>
-            <div className="text-lg font-bold text-gradient-brand">{label}</div>
+        <div className="rounded-2xl border border-border bg-card/60 backdrop-blur p-5 hover:border-brand transition flex flex-col items-center justify-center text-center gap-1">
+            <div className="text-2xl md:text-3xl font-bold leading-none">{value}</div>
+            <div className="text-sm md:text-base font-bold text-gradient-brand leading-tight">{label}</div>
         </div>
     );
 }

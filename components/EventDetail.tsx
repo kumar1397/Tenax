@@ -103,7 +103,7 @@ export default function EventDetailClient({ event, roster }: { event: EventVM; r
 
       {/* Tab bar */}
       <div className="px-6 md:px-10 mt-6">
-        <div className="flex flex-wrap gap-2 border-b border-border">
+        <div className="flex flex-nowrap sm:flex-wrap gap-2 border-b border-border overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {tabKeys.map((key) => {
             const active = tab === key;
             const Icon = ALL_TABS[key].icon;
@@ -112,7 +112,7 @@ export default function EventDetailClient({ event, roster }: { event: EventVM; r
                 key={key}
                 onClick={() => setTab(key)}
                 className={[
-                  "inline-flex items-center gap-2 px-4 py-3 text-sm font-semibold border-b-2 -mb-px transition",
+                  "inline-flex items-center gap-2 px-4 py-3 text-sm font-semibold border-b-2 -mb-px transition shrink-0 whitespace-nowrap",
                   active ? "border-brand text-foreground" : "border-transparent text-muted-foreground hover:text-foreground",
                 ].join(" ")}
               >

@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Search, LogIn } from "lucide-react";
+import { LogIn } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/utils/supabase/client";
+import { MobileNav } from "@/components/MobileNav";
 
 export function TopBar() {
   const [loggedIn, setLoggedIn] = useState<boolean | null>(null); // null = loading
@@ -30,16 +31,10 @@ export function TopBar() {
 
   return (
     <header className="sticky top-0 z-20 backdrop-blur-xl bg-background/70 border-b border-border">
-      <div className="flex items-center justify-between gap-4 px-6 py-3">
-        <div className="relative flex-1 max-w-xl">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-          <input
-            placeholder="Search tournaments, players, games..."
-            className="w-full bg-card border border-border rounded-lg pl-9 pr-4 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/60"
-          />
-        </div>
+      <div className="flex items-center gap-3 px-4 py-3 sm:gap-4 sm:px-6">
+        <MobileNav />
 
-        <div>
+        <div className="ml-auto">
           {loggedIn === null ? (
             <div className="size-9" />
           ) : loggedIn ? (

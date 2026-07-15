@@ -1,8 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Search, SlidersHorizontal, Trophy, Users2, Calendar, MapPin, Plus } from "lucide-react";
+import { Search, SlidersHorizontal, Trophy, Users2, Calendar, MapPin, Plus, X } from "lucide-react";
 
 type Event = {
   id: string;
@@ -71,6 +71,7 @@ export default function EventsPage({ initialEvents }: { initialEvents: any[] }) 
   const [format, setFormat] = useState("All");
   const [entry, setEntry] = useState("All");
   const [prize, setPrize] = useState(0);
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   const filtered = useMemo(() => events.filter((e) => {
     if (q && !e.title.toLowerCase().includes(q.toLowerCase())) return false;
@@ -84,6 +85,33 @@ export default function EventsPage({ initialEvents }: { initialEvents: any[] }) 
     if (prizeNum < prize) return false;
     return true;
   }), [events, q, game, region, status, format, entry, prize]);
+
+  // Lock body scroll while the mobile filter drawer is open
+  useEffect(() => {
+    if (!filtersOpen) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = prev; };
+  }, [filtersOpen]);
+
+  const reset = () => { setGame("All"); setRegion("All"); setFormat("All"); setEntry("All"); setPrize(0); };
+
+  const filterControls = (
+    <>
+      <FilterGroup label="Game" options={gamesList} value={game} onChange={setGame} />
+      <FilterGroup label="Region" options={regionsList} value={region} onChange={setRegion} />
+      <FilterGroup label="Format" options={formatList} value={format} onChange={setFormat} />
+      <FilterGroup label="Entry" options={entryList} value={entry} onChange={setEntry} />
+
+      <div>
+        <div className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3">Min Prize Pool</div>
+        <input type="range" min={0} max={100000} step={1000} value={prize} onChange={(e) => setPrize(+e.target.value)} className="w-full accent-[#D7155C]" />
+        <div className="flex justify-between text-xs text-muted-foreground mt-1">
+          <span>$0</span><span className="text-gradient-brand font-bold">${prize.toLocaleString()}+</span><span>$100K</span>
+        </div>
+      </div>
+    </>
+  );
 
   return (
     <div className="p-6 max-w-[1600px] mx-auto">
@@ -123,27 +151,52 @@ export default function EventsPage({ initialEvents }: { initialEvents: any[] }) 
         ))}
       </div>
 
-      <div className="grid lg:grid-cols-[280px_1fr] gap-6">
-        <aside className="rounded-2xl border border-border bg-card/60 backdrop-blur p-5 h-fit lg:sticky lg:top-20 space-y-6">
+      {/* Mobile filter trigger */}
+      <button
+        onClick={() => setFiltersOpen(true)}
+        className="lg:hidden inline-flex items-center gap-2 mb-4 px-4 py-2.5 rounded-lg bg-card border border-border text-sm font-semibold hover:border-brand transition"
+      >
+        <SlidersHorizontal className="size-4 text-primary" /> Filters
+      </button>
+
+      <div className="lg:grid lg:grid-cols-[280px_1fr] lg:gap-6">
+        {/* Desktop sidebar */}
+        <aside className="hidden lg:block rounded-2xl border border-border bg-card/60 backdrop-blur p-5 h-fit lg:sticky lg:top-20 space-y-6">
           <div className="flex items-center gap-2 pb-3 border-b border-border">
             <SlidersHorizontal className="size-4 text-primary" />
             <h3 className="font-bold">Filters</h3>
-            <button onClick={() => { setGame("All"); setRegion("All"); setFormat("All"); setEntry("All"); setPrize(0); }} className="ml-auto text-xs text-muted-foreground hover:text-primary">Reset</button>
+            <button onClick={reset} className="ml-auto text-xs text-muted-foreground hover:text-primary">Reset</button>
           </div>
-
-          <FilterGroup label="Game" options={gamesList} value={game} onChange={setGame} />
-          <FilterGroup label="Region" options={regionsList} value={region} onChange={setRegion} />
-          <FilterGroup label="Format" options={formatList} value={format} onChange={setFormat} />
-          <FilterGroup label="Entry" options={entryList} value={entry} onChange={setEntry} />
-
-          <div>
-            <div className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3">Min Prize Pool</div>
-            <input type="range" min={0} max={100000} step={1000} value={prize} onChange={(e) => setPrize(+e.target.value)} className="w-full accent-[#D7155C]" />
-            <div className="flex justify-between text-xs text-muted-foreground mt-1">
-              <span>$0</span><span className="text-gradient-brand font-bold">${prize.toLocaleString()}+</span><span>$100K</span>
-            </div>
-          </div>
+          {filterControls}
         </aside>
+
+        {/* Mobile filter drawer + backdrop */}
+        <div className="lg:hidden">
+          <div
+            onClick={() => setFiltersOpen(false)}
+            style={{ opacity: filtersOpen ? 1 : 0, transition: "opacity 300ms ease" }}
+            className={["fixed inset-0 z-40 bg-background/70 backdrop-blur-sm", filtersOpen ? "" : "pointer-events-none"].join(" ")}
+          />
+          <aside
+            style={{ transform: filtersOpen ? "translateX(0)" : "translateX(-100%)", transition: "transform 300ms ease" }}
+            className="fixed inset-y-0 left-0 z-50 w-80 max-w-[85vw] flex flex-col bg-card border-r border-border shadow-card-soft"
+          >
+            <div className="flex items-center gap-2 px-5 py-4 border-b border-border">
+              <SlidersHorizontal className="size-4 text-primary" />
+              <h3 className="font-bold">Filters</h3>
+              <button onClick={reset} className="ml-auto mr-1 text-xs text-muted-foreground hover:text-primary">Reset</button>
+              <button onClick={() => setFiltersOpen(false)} aria-label="Close filters" className="grid place-items-center size-8 rounded-lg border border-border text-muted-foreground hover:text-foreground transition">
+                <X className="size-4" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-5 space-y-6">{filterControls}</div>
+            <div className="p-4 border-t border-border">
+              <button onClick={() => setFiltersOpen(false)} className="w-full py-2.5 rounded-lg bg-gradient-brand text-white font-semibold shadow-glow hover:scale-[1.02] transition">
+                Show {filtered.length} {filtered.length === 1 ? "result" : "results"}
+              </button>
+            </div>
+          </aside>
+        </div>
 
         <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-5">
           {filtered.map((e) => (

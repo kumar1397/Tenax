@@ -254,6 +254,7 @@ export default function CreateEventPage() {
 
         {/* Sidebar */}
         <aside className="space-y-5 h-fit lg:sticky lg:top-20">
+          <div className="hidden lg:block">
           <SectionCard title="Preview" icon={Info}>
             <div className="rounded-xl border border-border bg-black/30 overflow-hidden">
               <div className="aspect-[16/9] relative bg-gradient-to-br from-[#D7155C]/30 to-black flex items-center justify-center">
@@ -292,6 +293,7 @@ export default function CreateEventPage() {
               </div>
             </div>
           </SectionCard>
+          </div>
 
           <div className="rounded-2xl border border-border bg-card/60 backdrop-blur p-5 space-y-4">
             <button onClick={handlePublish} disabled={saving || !loggedIn}

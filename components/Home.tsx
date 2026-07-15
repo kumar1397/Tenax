@@ -93,7 +93,7 @@ export default function Home({ initialEvents }: { initialEvents: any[] }) {
       </section>
 
       <section className="my-20">
-        <SectionHeader title="Upcoming Tournaments" link="/events?status=Upcoming" showLink={upcomingAll.length > 4} />
+        <SectionHeader title="Upcoming Tournaments" link="/events?status=Upcoming" showLink={upcomingAll.length > 4} linkAtBottomMobile />
         {upcoming.length === 0 ? (
           <p className="text-center text-muted-foreground py-8">No upcoming tournaments yet.</p>
         ) : (
@@ -101,17 +101,28 @@ export default function Home({ initialEvents }: { initialEvents: any[] }) {
             {upcoming.map((e) => <EventCard key={e.id} event={e} />)}
           </div>
         )}
+        {upcomingAll.length > 4 && (
+          <Link
+            href="/events?status=Upcoming"
+            className="sm:hidden mt-4 flex items-center justify-center gap-1 w-full py-3 rounded-xl border border-border text-sm font-semibold text-muted-foreground hover:text-primary hover:border-brand transition"
+          >
+            View all <ChevronRight className="size-4" />
+          </Link>
+        )}
       </section>
     </div>
   );
 }
 
-function SectionHeader({ title, link, showLink }: { title: string; link: string; showLink: boolean }) {
+function SectionHeader({ title, link, showLink, linkAtBottomMobile }: { title: string; link: string; showLink: boolean; linkAtBottomMobile?: boolean }) {
   return (
-    <div className="relative flex items-center justify-center mb-4">
-      <h2 className="text-4xl font-bold text-center">{title}</h2>
+    <div className="relative flex items-center justify-between gap-3 mb-4 sm:justify-center">
+      <h2 className="text-2xl sm:text-4xl font-bold sm:text-center">{title}</h2>
       {showLink && (
-        <Link href={link} className="absolute right-0 text-sm text-muted-foreground hover:text-primary inline-flex items-center gap-1">
+        <Link href={link} className={[
+          "shrink-0 text-sm text-muted-foreground hover:text-primary items-center gap-1 sm:absolute sm:right-0 sm:inline-flex",
+          linkAtBottomMobile ? "hidden" : "inline-flex",
+        ].join(" ")}>
           View all <ChevronRight className="size-4" />
         </Link>
       )}
