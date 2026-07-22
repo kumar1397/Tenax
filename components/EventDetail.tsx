@@ -64,7 +64,7 @@ function fmt(n?: number | null) {
   return String(n);
 }
 
-export default function EventDetailClient({ event, roster }: { event: EventVM; roster: RosterEntry[] }) {
+export default function EventDetailClient({ event, roster, canFinalize = false }: { event: EventVM; roster: RosterEntry[], canFinalize?: boolean }) {
   const isCompleted = event.status === "Completed";
 
   // Tabs differ by status: completed shows leaderboard + VODs, hides stream.
@@ -243,6 +243,17 @@ export default function EventDetailClient({ event, roster }: { event: EventVM; r
 
         {/* Sidebar */}
         <aside className="space-y-5">
+          {event.status === "Live" && canFinalize && (
+            <Link
+              href={`/events/${event.id}/results`}
+              className="block rounded-2xl border border-brand bg-gradient-brand p-5 shadow-glow hover:scale-[1.01] transition"
+            >
+              <div className="text-[10px] uppercase tracking-wider text-white/80 font-bold">Event is live</div>
+              <div className="text-lg font-bold text-white mt-0.5">Finalize & Assign Points →</div>
+              <div className="text-xs text-white/80 mt-1">Pick the top 3 and mark this event completed.</div>
+            </Link>
+          )}
+          
           {!isCompleted && (
             <div className="rounded-2xl border border-brand bg-gradient-brand-soft p-6 shadow-card-soft">
               <div className="text-xs uppercase tracking-wider text-muted-foreground">Registration {event.entry === "Free" ? "is" : "fee"}</div>
@@ -377,4 +388,6 @@ function Row({ label, value }: { label: string; value: string }) {
       <span className="font-semibold text-right">{value}</span>
     </div>
   );
-}   
+}
+
+

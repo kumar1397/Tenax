@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getEvent, getEventParticipants } from "@/actions/event";
 import EventDetailClient, { type EventVM, type RosterEntry } from "@/components/EventDetail";
+import { createClient } from "@/utils/supabase/server";
 
 const FALLBACK_COVER =
   "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=1200&q=80";
@@ -75,8 +76,17 @@ export default async function EventDetail({ params }: { params: Promise<{ id: st
   ]);
   if (!eventRes.data) notFound();
 
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  let canFinalize = false;
+  if (user?.email) {
+    const { data: me } = await supabase
+      .from("Users").select("role").eq("player_email", user.email).single();
+    canFinalize = me?.role === "admin";
+  }
+
   const event = toUiEvent(eventRes.data);
   const roster = toRoster(participantsRes.data ?? []);
 
-  return <EventDetailClient event={event} roster={roster} />;
+  return <EventDetailClient event={event} roster={roster} canFinalize={canFinalize} />;
 }

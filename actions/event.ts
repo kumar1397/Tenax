@@ -1,23 +1,22 @@
-
-
 'use server'
+import { revalidatePath } from "next/cache";
 
 import { createClient } from '@/utils/supabase/server'
 
 export type EventForm = {
-    title: string
-    game: string
-    region: string
-    format: string
-    prize: string
-    entry: string
-    startsAt: string
-    capacity: string
-    description: string
-    cover: string
-    rules: string          
-    bracketUrl: string     
-    streamUrl: string     
+  title: string
+  game: string
+  region: string
+  format: string
+  prize: string
+  entry: string
+  startsAt: string
+  capacity: string
+  description: string
+  cover: string
+  rules: string
+  bracketUrl: string
+  streamUrl: string
 }
 
 export async function createEvent(form: EventForm) {
@@ -26,6 +25,14 @@ export async function createEvent(form: EventForm) {
   // Auth guard — must be signed in
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'You must be signed in to create an event.' }
+
+  const { data: row } = await supabase
+    .from('Users')
+    .select('role')
+    .eq('player_email', user.email)
+    .single()
+  if (row?.role !== 'admin') return { error: 'Only admins can create events.' }
+
 
   const isFree = !form.entry || form.entry.toLowerCase() === 'free'
 
@@ -54,38 +61,38 @@ export async function createEvent(form: EventForm) {
 }
 
 export async function getEvents() {
-    const supabase = await createClient()
-    const { data, error } = await supabase
-        .from('Events')
-        .select('*')
-        .order('created_at', { ascending: false })
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('Events')
+    .select('*')
+    .order('created_at', { ascending: false })
 
-    if (error) return { error: error.message, data: [] }
-    return { data }
+  if (error) return { error: error.message, data: [] }
+  return { data }
 }
 
 
 export async function getEvent(id: number) {
-    const supabase = await createClient()
-    const { data, error } = await supabase
-        .from('Events')
-        .select('*')
-        .eq('id', id)
-        .single()
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('Events')
+    .select('*')
+    .eq('id', id)
+    .single()
 
-    if (error) return { error: error.message, data: null }
-    return { data }
+  if (error) return { error: error.message, data: null }
+  return { data }
 }
 
 export async function getEventParticipants(eventId: number) {
-    const supabase = await createClient()
-    const { data, error } = await supabase
-        .from('event_participants')
-        .select('*, Users(*)')   // pulls the full player record for each row
-        .eq('event_id', eventId)
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('event_participants')
+    .select('*, Users(*)')   // pulls the full player record for each row
+    .eq('event_id', eventId)
 
-    if (error) return { error: error.message, data: [] }
-    return { data }
+  if (error) return { error: error.message, data: [] }
+  return { data }
 }
 
 
@@ -100,6 +107,7 @@ export async function getUsers() {
   if (error) return { error: error.message, data: [] }
   return { data }
 }
+
 
 export type OrgRow = {
   name: string
@@ -250,4 +258,28 @@ export async function createOrg(input: {
 
   if (error) return { error: error.message }
   return { data: data as Org }
+}
+
+type PodiumEntry = { rank: number; team: string; points: number };
+
+export async function submitEventResults(eventId: number, podium: PodiumEntry[]) {
+  const supabase = await createClient();
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user?.email) return { error: "You must be signed in." };
+
+  const { data: me } = await supabase
+    .from("Users").select("role").eq("player_email", user.email).single();
+  if (me?.role !== "admin") return { error: "Only admins can finalize events." };
+
+  const { error } = await supabase
+    .from("Events")
+    .update({ leaderboard: podium, event_status: "completed" })
+    .eq("id", eventId);
+
+  if (error) return { error: error.message };
+
+  revalidatePath(`/events/${eventId}`);
+  revalidatePath("/events");
+  return { success: true };
 }

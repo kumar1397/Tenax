@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { LogIn } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 import { createClient } from "@/utils/supabase/client";
 import { MobileNav } from "@/components/MobileNav";
 
@@ -33,6 +34,14 @@ export function TopBar() {
     <header className="sticky top-0 z-20 backdrop-blur-xl bg-background/70 border-b border-border">
       <div className="flex items-center gap-3 px-4 py-3 sm:gap-4 sm:px-6">
         <MobileNav />
+
+        {/* Logo — mobile only (desktop sidebar already has it) */}
+        <Link href="/" className="flex items-center gap-2 md:hidden" title="Home">
+          <Image src="/GC.png" alt="Tenax Logo" width={32} height={32} style={{ height: "auto" }} />
+          <span className="font-display font-bold text-base tracking-tight">
+            TENAX<span className="text-gradient-brand">GG</span>
+          </span>
+        </Link>
 
         <div className="ml-auto">
           {loggedIn === null ? (

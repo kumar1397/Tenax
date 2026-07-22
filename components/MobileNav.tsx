@@ -72,15 +72,6 @@ export function MobileNav() {
               className="fixed inset-y-0 left-0 z-50 w-72 max-w-[85vw] flex flex-col border-r border-sidebar-border bg-sidebar shadow-card-soft md:hidden"
             >
               <div className="flex items-center justify-between px-5 py-5 border-b border-sidebar-border">
-                <Link href="/" className="flex items-center gap-2" onClick={() => setOpen(false)}>
-                  <Image src="/GC.png" alt="Tenax Logo" width={36} height={36} />
-                  <div className="leading-tight">
-                    <div className="font-display font-bold text-lg tracking-tight">
-                      TENAX<span className="text-gradient-brand">GG</span>
-                    </div>
-                    <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Esports Hub</div>
-                  </div>
-                </Link>
                 <button
                   type="button"
                   onClick={() => setOpen(false)}
