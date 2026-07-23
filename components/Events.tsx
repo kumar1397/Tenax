@@ -2,7 +2,9 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { Search, SlidersHorizontal, Trophy, Users2, Calendar, MapPin, Plus, X } from "lucide-react";
+import { useRole } from "./useRole";
 
 type Event = {
   id: string;
@@ -26,8 +28,6 @@ const STATUS_MAP: Record<string, Event["status"]> = {
   completed: "Completed",
 };
 
-const FALLBACK_COVER =
-  "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=1200&q=80";
 
 function toUiEvent(row: any): Event {
   return {
@@ -43,7 +43,7 @@ function toUiEvent(row: any): Event {
     participants: row.no_of_player ?? 0,
     capacity: row.total_player ?? 0,
     organizer: row.organizer ?? "—",
-    cover: row.cover_image || FALLBACK_COVER,
+    cover: row.cover_image
   };
 }
 
@@ -53,21 +53,33 @@ const statusList: Array<"All" | "Live" | "Upcoming" | "Completed"> = ["All", "Li
 const formatList = ["All", "Single Elim", "Double Elim", "Round Robin", "Swiss"];
 const entryList = ["All", "Free", "Paid"];
 
-// Read ?status= once, synchronously, so the correct pill is active on first paint
-function initialStatus(): typeof statusList[number] {
-  if (typeof window === "undefined") return "All";
-  const s = new URLSearchParams(window.location.search).get("status");
-  return s === "Live" || s === "Upcoming" || s === "Completed" ? s : "All";
-}
+const STATUS_STYLE: Record<Event["status"], string> = {
+  Live: "bg-emerald-500 text-white",
+  Upcoming: "bg-amber-500 text-black",
+  Completed: "bg-zinc-600 text-white",
+};
+
+const GAME_STYLE: Record<string, string> = {
+  InvincibleVS: "bg-violet-500/85 text-white",
+  "2XKO": "bg-sky-500/85 text-white",
+  Valorant: "bg-rose-500/85 text-white",
+  "Dead by Daylight": "bg-teal-500/85 text-white",
+};
+const gameStyle = (g: string) => GAME_STYLE[g] ?? "bg-black/60 text-white";
 
 export default function EventsPage({ initialEvents }: { initialEvents: any[] }) {
-  // Data arrives from the server — map once, no fetch, no loading state
+  const { isAdmin } = useRole();
   const [events] = useState<Event[]>(() => (initialEvents ?? []).map(toUiEvent));
+
+  const searchParams = useSearchParams();
 
   const [q, setQ] = useState("");
   const [game, setGame] = useState("All");
   const [region, setRegion] = useState("All");
-  const [status, setStatus] = useState<typeof statusList[number]>(initialStatus);
+  const [status, setStatus] = useState<typeof statusList[number]>(() => {
+    const s = searchParams.get("status");
+    return s === "Live" || s === "Upcoming" || s === "Completed" ? s : "All";
+  });
   const [format, setFormat] = useState("All");
   const [entry, setEntry] = useState("All");
   const [prize, setPrize] = useState(0);
@@ -129,13 +141,14 @@ export default function EventsPage({ initialEvents }: { initialEvents: any[] }) 
               className="w-full bg-card border border-border rounded-lg pl-9 pr-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring/60"
             />
           </div>
-
-          <Link
-            href="/events/create"
-            className="inline-flex items-center justify-center gap-2 shrink-0 bg-gradient-brand text-white font-semibold px-5 py-2.5 rounded-lg shadow-glow hover:scale-[1.02] transition"
-          >
-            <Plus className="size-4" /> Create Event
-          </Link>
+          {isAdmin && (
+            <Link
+              href="/events/create"
+              className="inline-flex items-center justify-center gap-2 shrink-0 bg-gradient-brand text-white font-semibold px-5 py-2.5 rounded-lg shadow-glow hover:scale-[1.02] transition"
+            >
+              <Plus className="size-4" /> Create Event
+            </Link>
+          )}
         </div>
       </div>
       <div className="flex flex-wrap gap-2 mb-6">
@@ -161,7 +174,7 @@ export default function EventsPage({ initialEvents }: { initialEvents: any[] }) 
 
       <div className="lg:grid lg:grid-cols-[280px_1fr] lg:gap-6">
         {/* Desktop sidebar */}
-        <aside className="hidden lg:block rounded-2xl border border-border bg-card/60 backdrop-blur p-5 h-fit lg:sticky lg:top-20 space-y-6">
+        <aside className="hidden lg:block rounded-2xl border border-border bg-card/60 p-5 h-fit lg:sticky lg:top-20 space-y-6">
           <div className="flex items-center gap-2 pb-3 border-b border-border">
             <SlidersHorizontal className="size-4 text-primary" />
             <h3 className="font-bold">Filters</h3>
@@ -200,26 +213,22 @@ export default function EventsPage({ initialEvents }: { initialEvents: any[] }) 
 
         <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-5">
           {filtered.map((e) => (
-            <Link href={`/events/${e.id}`} key={e.id} className="group rounded-2xl border border-border bg-card/60 backdrop-blur overflow-hidden hover:border-brand transition shadow-card-soft">
+            <Link href={`/events/${e.id}`} key={e.id} className="rounded-2xl border border-border bg-card/60 overflow-hidden shadow-card-soft">
               <div className="aspect-[16/9] relative overflow-hidden">
-                <img src={e.cover} alt={e.title} className="size-full object-cover group-hover:scale-105 transition duration-500" />
+                <img src={e.cover} alt={e.title} className="size-full object-cover" />
                 <div className="absolute inset-0 bg-gradient-to-t from-card via-transparent to-transparent" />
                 <div className="absolute top-3 left-3 flex gap-2">
-                  <span className={[
-                    "px-2.5 py-1 rounded-full text-[10px] font-bold",
-                    e.status === "Live" ? "bg-gradient-brand text-white shadow-glow" : "bg-black/60 backdrop-blur text-white",
-                  ].join(" ")}>
+                  <span className={["px-2.5 py-1 rounded-full text-[10px] font-bold", STATUS_STYLE[e.status]].join(" ")}>
                     {e.status === "Live" && <span className="inline-block size-1.5 rounded-full bg-white mr-1 align-middle animate-pulse" />}
                     {e.status.toUpperCase()}
                   </span>
-                  <span className="px-2.5 py-1 rounded-full bg-black/60 backdrop-blur text-white text-[10px] font-semibold">{e.game}</span>
+                  <span className={["px-2.5 py-1 rounded-full text-[10px] font-semibold", gameStyle(e.game)].join(" ")}>{e.game}</span>
                 </div>
                 <div className="absolute bottom-3 right-3 px-2.5 py-1 rounded-md bg-gradient-brand text-white text-xs font-bold shadow-glow">{e.prize}</div>
               </div>
               <div className="p-4">
                 <div className="font-bold truncate">{e.title}</div>
-                <div className="mt-1 text-xs text-muted-foreground">{e.organizer}</div>
-                <div className="mt-3 grid grid-cols-3 gap-2 text-[11px]">
+                <div className="mt-3 grid grid-cols-3 gap-2 text-[13px]">
                   <Meta icon={Calendar} text={new Date(e.startsAt).toLocaleDateString(undefined, { month: "short", day: "numeric" })} />
                   <Meta icon={MapPin} text={e.region} />
                   <Meta icon={Users2} text={`${e.participants}/${e.capacity}`} />
@@ -259,5 +268,5 @@ function FilterGroup({ label, options, value, onChange }: { label: string; optio
 }
 
 function Meta({ icon: Icon, text }: any) {
-  return <div className="flex items-center gap-1 text-muted-foreground"><Icon className="size-3" />{text}</div>;
+  return <div className="flex items-center gap-1.5 font-semibold text-foreground/85"><Icon className="size-4 text-primary shrink-0" />{text}</div>;
 }

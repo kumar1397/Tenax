@@ -9,7 +9,7 @@ const sponsors = [
 export default function About() {
     return (
         <>
-            <section className="relative overflow-hidden rounded-3xl border border-border bg-card/60 backdrop-blur p-8 md:p-12 mx-4 mt-6 md:mt-0">
+            <section className="relative overflow-hidden rounded-3xl border border-border bg-card/60 p-8 md:p-12 mx-4 mt-6 md:mt-0">
                 {/* soft crimson glow accent */}
                 <div className="pointer-events-none absolute -top-24 -right-24 size-72 rounded-full bg-gradient-brand-soft blur-3xl opacity-60" />
 
@@ -49,7 +49,7 @@ export default function About() {
             </section>
 
             {/* Sponsors */}
-            <section className="relative overflow-hidden rounded-3xl border border-border bg-card/60 backdrop-blur mt-8 mx-4 p-8 md:p-12">
+            <section className="relative overflow-hidden rounded-3xl border border-border bg-card/60 mt-8 mx-4 p-8 md:p-12">
                 <div className="text-center max-w-2xl mx-auto">
                     <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-secondary border border-border text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
                         <Handshake className="size-3.5 text-primary" /> Our Sponsors
@@ -62,28 +62,38 @@ export default function About() {
                     </p>
                 </div>
 
-                <div className="mt-10 flex gap-4 overflow-x-auto flex-nowrap justify-start sm:flex-wrap sm:justify-center sm:overflow-visible [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                    {sponsors.map((s) => (
-                        <div
-                            key={s.name}
-                            className="group shrink-0 flex items-center justify-center rounded-2xl border border-border bg-secondary/40 p-6 w-52 sm:w-40 aspect-[3/2] hover:border-brand transition"
-                        >
-                            <img
-                                src={s.src}
-                                alt={s.name}
-                                className="max-h-20 sm:max-h-16 max-w-full w-auto object-contain"
-                            />
+                {/* Mobile: continuously flowing carousel */}
+                <div className="mt-10 overflow-hidden sm:hidden [mask-image:linear-gradient(to_right,transparent,black_10%,black_90%,transparent)] [-webkit-mask-image:linear-gradient(to_right,transparent,black_10%,black_90%,transparent)]">
+                    <div className="flex w-max animate-marquee">
+                        <div className="flex gap-4 pr-4">
+                            {sponsors.map((s) => <SponsorCard key={s.name} s={s} />)}
                         </div>
-                    ))}
+                        <div className="flex gap-4 pr-4" aria-hidden="true">
+                            {sponsors.map((s) => <SponsorCard key={s.name} s={s} />)}
+                        </div>
+                    </div>
+                </div>
+
+                {/* Desktop: static wrapped row */}
+                <div className="mt-10 hidden sm:flex sm:flex-wrap sm:justify-center gap-4">
+                    {sponsors.map((s) => <SponsorCard key={s.name} s={s} />)}
                 </div>
             </section>
         </>
     );
 }
 
+function SponsorCard({ s }: { s: { name: string; src: string } }) {
+    return (
+        <div className="shrink-0 flex items-center justify-center rounded-2xl border border-border bg-secondary/40 p-6 w-52 sm:w-40 aspect-[3/2]">
+            <img src={s.src} alt={s.name} className="max-h-20 sm:max-h-16 max-w-full w-auto object-contain" />
+        </div>
+    );
+}
+
 function MiniStat({ label, value }: { label: string; value: string }) {
     return (
-        <div className="rounded-2xl border border-border bg-card/60 backdrop-blur p-5 hover:border-brand transition flex flex-col items-center justify-center text-center gap-1">
+        <div className="rounded-2xl border border-border bg-card/60 p-5 hover:border-brand transition flex flex-col items-center justify-center text-center gap-1">
             <div className="text-2xl md:text-3xl font-bold leading-none">{value}</div>
             <div className="text-sm md:text-base font-bold text-gradient-brand leading-tight">{label}</div>
         </div>

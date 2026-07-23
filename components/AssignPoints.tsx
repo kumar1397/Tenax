@@ -57,7 +57,7 @@ export default function AssignPoints({
         <ChevronLeft className="size-4" /> Back to event
       </Link>
 
-      <div className="rounded-2xl border border-border bg-card/60 backdrop-blur overflow-hidden mb-6">
+      <div className="rounded-2xl border border-border bg-card/60 overflow-hidden mb-6">
         <div className="relative h-32">
           {cover && <img src={cover} alt="" className="absolute inset-0 size-full object-cover" />}
           <div className="absolute inset-0 bg-gradient-to-t from-card via-card/70 to-card/30" />
@@ -117,7 +117,7 @@ export default function AssignPoints({
         </div>
 
         {/* Player search */}
-        <aside className="rounded-2xl border border-border bg-card/60 backdrop-blur p-5 h-fit lg:sticky lg:top-20">
+        <aside className="rounded-2xl border border-border bg-card/60 p-5 h-fit lg:sticky lg:top-20">
           <h3 className="font-bold mb-1">Registered Players</h3>
           <p className="text-xs text-muted-foreground mb-3">
             {activeSlot === null ? "Tap a podium slot to start assigning." : `Assigning to ${PODIUM[activeSlot].label}`}

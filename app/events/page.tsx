@@ -1,5 +1,6 @@
   // app/events/page.tsx  (Server Component — fetches, then passes data down)
   import type { Metadata } from "next";
+  import { Suspense } from "react";
   import EventsPage from "@/components/Events";
   import { createPublicClient } from "@/utils/supabase/public";
 
@@ -18,5 +19,9 @@
       .select("*")
       .order("created_at", { ascending: false });
 
-    return <EventsPage initialEvents={data ?? []} />;
+    return (
+      <Suspense>
+        <EventsPage initialEvents={data ?? []} />
+      </Suspense>
+    );
   }

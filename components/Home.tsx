@@ -97,7 +97,7 @@ export default function Home({ initialEvents }: { initialEvents: any[] }) {
         {upcoming.length === 0 ? (
           <p className="text-center text-muted-foreground py-8">No upcoming tournaments yet.</p>
         ) : (
-          <div className="grid sm:grid-cols-2 gap-4">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {upcoming.map((e) => <EventCard key={e.id} event={e} />)}
           </div>
         )}
@@ -130,19 +130,44 @@ function SectionHeader({ title, link, showLink, linkAtBottomMobile }: { title: s
   );
 }
 
+// Distinct colour per status so the badge reads at a glance
+const STATUS_STYLE: Record<Event["status"], string> = {
+  Live: "bg-emerald-500 text-white",
+  Upcoming: "bg-amber-500 text-black",
+  Completed: "bg-zinc-600 text-white",
+};
+
+function StatusBadge({ status }: { status: Event["status"] }) {
+  return (
+    <span className={["inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide", STATUS_STYLE[status]].join(" ")}>
+      {status === "Live" && <span className="size-1.5 rounded-full bg-white animate-pulse" />}
+      {status}
+    </span>
+  );
+}
+
+// Per-game accent so the game capsule is identifiable at a glance
+const GAME_STYLE: Record<string, string> = {
+  InvincibleVS: "bg-violet-500/85 text-white",
+  "2XKO": "bg-sky-500/85 text-white",
+  Valorant: "bg-rose-500/85 text-white",
+  "Dead by Daylight": "bg-teal-500/85 text-white",
+};
+const gameStyle = (g: string) => GAME_STYLE[g] ?? "bg-black/60 text-white";
+
 function LiveCard({ event }: { event: Event }) {
   return (
-    <Link href={`/events/${event.id}`} className="group relative overflow-hidden rounded-2xl border border-border hover:border-brand transition shadow-card-soft">
+    <Link href={`/events/${event.id}`} className="relative overflow-hidden rounded-2xl border border-border shadow-card-soft">
       <div className="aspect-[16/10] relative">
-        <img src={event.cover} alt={event.title} className="size-full object-cover group-hover:scale-105 transition duration-500" />
+        <img src={event.cover} alt={event.title} className="size-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-t from-card via-card/40 to-transparent" />
         <div className="absolute top-3 left-3 flex items-center gap-2">
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-gradient-brand text-white text-[10px] font-bold shadow-glow">
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500 text-white text-[10px] font-bold shadow-glow">
             <span className="size-1.5 rounded-full bg-white animate-pulse" /> LIVE
           </span>
-          <span className="px-2.5 py-1 rounded-full bg-black/60 backdrop-blur text-white text-[10px] font-semibold">{event.game}</span>
+          <span className={["px-2.5 py-1 rounded-full text-[10px] font-semibold", gameStyle(event.game)].join(" ")}>{event.game}</span>
         </div>
-        <div className="absolute top-3 right-3 px-2 py-1 rounded-md bg-black/60 backdrop-blur text-white text-[11px] font-mono">
+        <div className="absolute top-3 right-3 px-2 py-1 rounded-md bg-gradient-brand text-white text-[11px] font-semibold">
           {(event.participants * 12).toLocaleString()} viewers
         </div>
       </div>
@@ -160,23 +185,25 @@ function LiveCard({ event }: { event: Event }) {
 
 function EventCard({ event }: { event: Event }) {
   return (
-    <Link href={`/events/${event.id}`} className="group rounded-2xl border border-border bg-card/60 backdrop-blur p-4 hover:border-brand transition shadow-card-soft">
-      <div className="flex items-start gap-3">
-        <img src={event.cover} alt="" className="size-16 rounded-xl object-cover" />
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
-            <span className="text-[10px] px-2 py-0.5 rounded-full bg-secondary text-secondary-foreground font-semibold">{event.status}</span>
-            <span className="text-[10px] text-muted-foreground">{event.game}</span>
-          </div>
-          <div className="mt-1 font-bold truncate">{event.title}</div>
-          <div className="text-xs text-muted-foreground mt-0.5">{new Date(event.startsAt).toLocaleDateString(undefined, { month: "short", day: "numeric" })} · {event.region}</div>
+    <Link href={`/events/${event.id}`} className="relative overflow-hidden rounded-2xl border border-border shadow-card-soft">
+      <div className="aspect-[16/10] relative">
+        <img src={event.cover} alt={event.title} className="size-full object-cover" />
+        <div className="absolute inset-0 bg-gradient-to-t from-card via-card/40 to-transparent" />
+        <div className="absolute top-3 left-3 flex items-center gap-2">
+          <StatusBadge status={event.status} />
+          <span className={["px-2.5 py-1 rounded-full text-[10px] font-semibold", gameStyle(event.game)].join(" ")}>{event.game}</span>
+        </div>
+        <div className="absolute top-3 right-3 px-2 py-1 rounded-md bg-gradient-brand text-white text-[11px] font-semibold">
+          {new Date(event.startsAt).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
         </div>
       </div>
-      <div className="mt-3 flex items-center justify-between text-xs">
-        <div className="flex -space-x-1.5">
-          {[0, 1, 2, 3].map((i) => <div key={i} className="size-6 rounded-full border-2 border-card bg-gradient-brand" />)}
+      <div className="p-4 bg-card">
+        <div className="font-bold truncate">{event.title}</div>
+        <div className="mt-1 text-xs text-muted-foreground">{event.region}</div>
+        <div className="mt-3 flex items-center justify-between text-sm">
+          <span className="text-gradient-brand font-bold">{event.prize}</span>
+          <span className="text-muted-foreground">{event.format}</span>
         </div>
-        <span className="font-bold text-gradient-brand text-sm">{event.prize}</span>
       </div>
     </Link>
   );

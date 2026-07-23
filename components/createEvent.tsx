@@ -295,7 +295,7 @@ export default function CreateEventPage() {
           </SectionCard>
           </div>
 
-          <div className="rounded-2xl border border-border bg-card/60 backdrop-blur p-5 space-y-4">
+          <div className="rounded-2xl border border-border bg-card/60 p-5 space-y-4">
             <button onClick={handlePublish} disabled={saving || !loggedIn}
               className="w-full py-3 rounded-xl bg-gradient-brand text-white font-semibold shadow-glow hover:scale-[1.02] transition disabled:opacity-50 disabled:cursor-not-allowed">
               {saving ? "Publishing..." : "Publish Tournament"}
@@ -318,7 +318,7 @@ export default function CreateEventPage() {
 
 function SectionCard({ title, icon: Icon, children }: { title: string; icon: any; children: React.ReactNode }) {
   return (
-    <div className="rounded-2xl border border-border bg-card/60 backdrop-blur p-5 space-y-5">
+    <div className="rounded-2xl border border-border bg-card/60 p-5 space-y-5">
       <div className="flex items-center gap-2 pb-3 border-b border-border">
         <div className="size-8 rounded-lg bg-gradient-brand-soft border border-brand grid place-items-center">
           <Icon className="size-4 text-primary" />

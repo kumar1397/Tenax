@@ -103,8 +103,19 @@
   body {
     min-height: 100vh;
     color: var(--color-foreground);
+    background: #0c0307;
+  }
+  /* Gradient backdrop on a fixed, GPU-composited layer painted once.
+     `background-attachment: fixed` forced a full-viewport repaint on every
+     scroll frame (the main cause of scroll jank on macOS); a fixed element
+     is just composited, not repainted. */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
     background: radial-gradient(110% 70% at 50% -15%, #D7155C 0%, #8C0E3D 22%, #1a0510 50%, #0c0307 80%);
-    background-attachment: fixed;
   }
   h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 700; letter-spacing: -0.02em; }
 }
@@ -133,8 +144,8 @@
 }
 .hero-gradient-breathe { animation: heroBreathe 12s ease-in-out infinite; }
 @keyframes heroBreathe {
-  0%, 100% { background-position: 0% 0%; filter: hue-rotate(0deg); }
-  50%      { background-position: 100% 100%; filter: hue-rotate(-6deg); }
+  0%, 100% { background-position: 0% 0%; }
+  50%      { background-position: 100% 100%; }
 }
 
 .hero-heartbeat {
@@ -156,7 +167,16 @@
 
 canvas.hero-embers, .hero-gradient-breathe + canvas { filter: blur(0.4px); }
 
+/* Continuously flowing marquee (transform-only → GPU-composited, cheap).
+   The track holds two identical groups; -50% loops seamlessly. */
+.animate-marquee { animation: marquee 18s linear infinite; }
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .hero-gradient-breathe { animation: none; }
   .hero-heartbeat { animation: none; opacity: 0.35; }
+  .animate-marquee { animation: none; }
 }

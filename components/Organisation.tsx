@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Trophy, Medal, Crown, Building2 } from "lucide-react";
+import { Trophy, Medal, Crown, Building2, ChevronDown } from "lucide-react";
 
 type OrgRow = {
   name: string;
@@ -11,6 +11,7 @@ type OrgRow = {
   members: number;
   totalMmr: number;
   avgMmr: number;
+  byGame?: Record<string, { members: number; avgMmr: number }>;
 };
 
 const medalClass = (rank: number) => {
@@ -22,15 +23,31 @@ const medalClass = (rank: number) => {
 
 export default function OrgLeaderboard({ initialOrgs }: { initialOrgs: OrgRow[] }) {
   const [orgs] = useState<OrgRow[]>(initialOrgs ?? []);
+  const [game, setGame] = useState("All");
 
-  // Ranked strictly by average member MMR
-  const ranked = useMemo(() => [...orgs].sort((a, b) => b.avgMmr - a.avgMmr), [orgs]);
+  // Games present across all orgs' members
+  const games = useMemo(() => {
+    const set = new Set<string>();
+    orgs.forEach((o) => Object.keys(o.byGame ?? {}).forEach((g) => set.add(g)));
+    return ["All", ...Array.from(set).sort()];
+  }, [orgs]);
+
+  // Rank by average member MMR — scoped to the selected game when one is chosen
+  const ranked = useMemo(() => {
+    const rows = game === "All"
+      ? orgs.map((o) => ({ ...o, viewMembers: o.members, viewAvg: o.avgMmr }))
+      : orgs
+          .filter((o) => (o.byGame?.[game]?.members ?? 0) > 0)
+          .map((o) => ({ ...o, viewMembers: o.byGame![game].members, viewAvg: o.byGame![game].avgMmr }));
+    return rows.sort((a, b) => b.viewAvg - a.viewAvg);
+  }, [orgs, game]);
   const top3 = ranked.slice(0, 3);
 
   return (
     <div className="p-6 max-w-[1200px] mx-auto">
-      <div className="mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-8">
         <h1 className="text-3xl md:text-4xl font-bold">Organizations</h1>
+        {games.length > 1 && <GameFilter value={game} onChange={setGame} options={games} />}
       </div>
 
       {/* Podium */}
@@ -42,7 +59,7 @@ export default function OrgLeaderboard({ initialOrgs }: { initialOrgs: OrgRow[] 
             return (
               <div key={o.name} className={[
                 "relative rounded-xl md:rounded-2xl border p-2.5 md:p-5 text-center overflow-hidden",
-                isFirst ? "md:-mt-4 bg-gradient-brand-soft border-brand shadow-glow" : "bg-card/60 backdrop-blur border-border",
+                isFirst ? "md:-mt-4 bg-gradient-brand-soft border-brand shadow-glow" : "bg-card/60 border-border",
               ].join(" ")}>
                 <div className={["absolute top-1.5 left-1.5 md:top-3 md:left-3 size-5 md:size-9 rounded-md md:rounded-xl grid place-items-center bg-gradient-to-br", medalClass(rank)].join(" ")}>
                   <Medal className="size-3 md:size-5" />
@@ -52,8 +69,8 @@ export default function OrgLeaderboard({ initialOrgs }: { initialOrgs: OrgRow[] 
                   ? <img src={o.logo} alt="" className="size-10 md:size-16 mx-auto rounded-lg md:rounded-2xl bg-secondary" />
                   : <div className="size-10 md:size-16 mx-auto rounded-lg md:rounded-2xl bg-secondary grid place-items-center"><Building2 className="size-4 md:size-7 text-muted-foreground" /></div>}
                 <div className="mt-2 md:mt-3 font-bold text-xs md:text-lg truncate">{o.name}</div>
-                <div className="text-[10px] md:text-xs text-muted-foreground truncate">{o.tricode} · {o.members}p</div>
-                <div className="mt-2 md:mt-3 text-sm md:text-2xl font-bold text-gradient-brand">{o.avgMmr.toLocaleString()}</div>
+                <div className="text-[10px] md:text-xs text-muted-foreground truncate">{o.tricode} · {o.viewMembers}p</div>
+                <div className="mt-2 md:mt-3 text-sm md:text-2xl font-bold text-gradient-brand">{o.viewAvg.toLocaleString()}</div>
                 <div className="text-[10px] md:text-xs text-muted-foreground">avg MMR</div>
               </div>
             );
@@ -62,7 +79,7 @@ export default function OrgLeaderboard({ initialOrgs }: { initialOrgs: OrgRow[] 
       )}
 
       {/* Table */}
-      <div className="rounded-2xl border border-border bg-card/60 backdrop-blur overflow-hidden">
+      <div className="rounded-2xl border border-border bg-card/60 overflow-hidden">
         <div className="grid grid-cols-[40px_1fr_56px_84px] sm:grid-cols-[60px_1fr_120px_140px] gap-x-2 px-3 py-3 sm:px-4 text-[11px] uppercase tracking-wider text-muted-foreground font-bold border-b border-border bg-secondary/40">
           <div>Rank</div><div>Org</div><div className="text-right sm:text-left">Players</div><div className="text-right">Avg MMR</div>
         </div>
@@ -83,17 +100,38 @@ export default function OrgLeaderboard({ initialOrgs }: { initialOrgs: OrgRow[] 
                   <div className="text-[11px] text-muted-foreground">{o.tricode}</div>
                 </div>
               </div>
-              <div className="text-sm text-right sm:text-left">{o.members}</div>
-              <div className="text-right font-bold text-gradient-brand">{o.avgMmr.toLocaleString()}</div>
+              <div className="text-sm text-right sm:text-left">{o.viewMembers}</div>
+              <div className="text-right font-bold text-gradient-brand">{o.viewAvg.toLocaleString()}</div>
             </div>
           ))}
           {ranked.length === 0 && (
             <div className="py-16 text-center text-muted-foreground">
-              <Trophy className="size-10 mx-auto mb-2 opacity-30" />No organizations yet.
+              <Trophy className="size-10 mx-auto mb-2 opacity-30" />
+              {game === "All" ? "No organizations yet." : `No organizations with ${game} players.`}
             </div>
           )}
         </div>
       </div>
     </div>
+  );
+}
+
+function GameFilter({ value, onChange, options }: { value: string; onChange: (v: string) => void; options: string[] }) {
+  return (
+    <label className="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-2 w-full sm:w-auto">
+      <span className="text-[11px] uppercase tracking-wider text-muted-foreground font-bold">Game</span>
+      <div className="relative w-full sm:w-auto">
+        <select
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className="appearance-none w-full bg-card border border-border rounded-lg pl-3 pr-8 py-2 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-ring/60 cursor-pointer sm:min-w-[160px]"
+        >
+          {options.map((o) => (
+            <option key={o} value={o}>{o === "All" ? "All Games" : o}</option>
+          ))}
+        </select>
+        <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
+      </div>
+    </label>
   );
 }

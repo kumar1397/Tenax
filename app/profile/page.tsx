@@ -194,7 +194,7 @@ export default function ProfilePage() {
       {/* Stats */}
       <div className="mt-8 grid grid-cols-2 md:grid-cols-4 gap-3">
         {statCards.map((s) => (
-          <div key={s.label} className="rounded-2xl border border-border bg-card/60 backdrop-blur p-4">
+          <div key={s.label} className="rounded-2xl border border-border bg-card/60 p-4">
             <div className="flex items-center justify-between">
               <span className="text-xs uppercase tracking-wider text-muted-foreground font-bold">{s.label}</span>
               <s.icon className="size-4 text-primary" />
@@ -205,7 +205,7 @@ export default function ProfilePage() {
       </div>
 
       {/* Editable details */}
-      <div className="mt-6 rounded-2xl border border-border bg-card/60 backdrop-blur p-6">
+      <div className="mt-6 rounded-2xl border border-border bg-card/60 p-6">
         <div className="flex items-center gap-2 pb-4 border-b border-border mb-5">
           <Gamepad2 className="size-5 text-primary" />
           <h2 className="text-xl font-bold">Profile Details</h2>

@@ -159,7 +159,7 @@ export default function UsersPage({ initialPlayers }: { initialPlayers: any[] })
             return (
               <div key={p.id} className={[
                 "relative rounded-xl md:rounded-2xl border p-2.5 md:p-5 text-center overflow-hidden",
-                place === 1 ? "md:-mt-4 bg-gradient-brand-soft border-brand shadow-glow" : "bg-card/60 backdrop-blur border-border",
+                place === 1 ? "md:-mt-4 bg-gradient-brand-soft border-brand shadow-glow" : "bg-card/60 border-border",
               ].join(" ")}>
                 <div className="absolute top-1.5 left-1.5 md:top-3 md:left-3 size-5 md:size-8 rounded md:rounded-lg bg-gradient-brand text-white grid place-items-center font-bold text-[10px] md:text-base shadow-glow">#{place}</div>
                 {place === 1 && <Crown className="absolute top-1.5 right-1.5 md:top-3 md:right-3 size-4 md:size-5 text-primary" />}
@@ -229,7 +229,7 @@ export default function UsersPage({ initialPlayers }: { initialPlayers: any[] })
         </aside>
       </div>
 
-      <div className="rounded-2xl border border-border bg-card/60 backdrop-blur overflow-hidden">
+      <div className="rounded-2xl border border-border bg-card/60 overflow-hidden">
         <div className="grid grid-cols-[32px_1fr_72px_56px] lg:grid-cols-[50px_1fr_130px_120px_90px_110px_80px] gap-x-2 px-3 py-3 lg:px-4 text-[11px] uppercase tracking-wider text-muted-foreground font-bold border-b border-border bg-secondary/40">
           <div>Rank</div><div>Player</div><div className="hidden lg:block">Org</div><div className="hidden lg:block">Game</div><div className="hidden lg:block">Region</div><div className="text-right">MMR</div><div className="text-right">Win %</div>
         </div>

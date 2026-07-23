@@ -92,11 +92,10 @@ export default function EventDetailClient({ event, roster, canFinalize = false }
                 {event.status === "Live" && <span className="size-1.5 rounded-full bg-white animate-pulse" />}
                 {event.status.toUpperCase()}
               </span>
-              <span className="px-3 py-1 rounded-full bg-black/60 backdrop-blur text-white text-xs font-semibold">{event.game}</span>
-              <span className="px-3 py-1 rounded-full bg-black/60 backdrop-blur text-white text-xs font-semibold">{event.format}</span>
+              <span className="px-3 py-1 rounded-full bg-black/60 text-white text-xs font-semibold">{event.game}</span>
+              <span className="px-3 py-1 rounded-full bg-black/60 text-white text-xs font-semibold">{event.format}</span>
             </div>
             <h1 className="text-3xl md:text-5xl font-bold max-w-3xl">{event.title}</h1>
-            <div className="mt-2 text-muted-foreground">Hosted by <span className="text-foreground font-semibold">{event.organizer}</span></div>
           </div>
         </div>
       </div>
@@ -262,7 +261,7 @@ export default function EventDetailClient({ event, roster, canFinalize = false }
             </div>
           )}
 
-          <div className="rounded-2xl border border-border bg-card/60 backdrop-blur p-5">
+          <div className="rounded-2xl border border-border bg-card/60 p-5">
             <h3 className="font-bold mb-3 flex items-center gap-2"><Clock className="size-4 text-primary" /> Schedule</h3>
             <div className="space-y-3 text-sm">
               <Row label="Start" value={`${new Date(event.startsAt).toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" })}${event.eventTime ? ` · ${event.eventTime.slice(0, 5)}` : ""}`} />
@@ -337,7 +336,7 @@ function Leaderboard({ rows, prize }: { rows: EventVM["leaderboard"]; prize: str
 
 function Section({ title, icon: Icon, children }: { title: string; icon?: any; children: React.ReactNode }) {
   return (
-    <section className="rounded-2xl border border-border bg-card/60 backdrop-blur p-6">
+    <section className="rounded-2xl border border-border bg-card/60 p-6">
       <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
         {Icon && <Icon className="size-5 text-primary" />} {title}
       </h2>
@@ -369,7 +368,7 @@ function Empty({ text }: { text: string }) {
 
 function Pill({ icon: Icon, label, value }: any) {
   return (
-    <div className="rounded-xl border border-border bg-card/60 backdrop-blur p-4 flex items-center gap-3">
+    <div className="rounded-xl border border-border bg-card/60 p-4 flex items-center gap-3">
       <div className="size-10 rounded-lg bg-gradient-brand-soft border border-brand grid place-items-center">
         <Icon className="size-4 text-primary" />
       </div>
