@@ -117,7 +117,7 @@ export default function EventsPage({ initialEvents }: { initialEvents: any[] }) 
 
       <div>
         <div className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3">Min Prize Pool</div>
-        <input type="range" min={0} max={100000} step={1000} value={prize} onChange={(e) => setPrize(+e.target.value)} className="w-full accent-[#D7155C]" />
+        <input type="range" min={0} max={100000} step={1000} value={prize} onChange={(e) => setPrize(+e.target.value)} className="w-full accent-[#8B5CF6]" />
         <div className="flex justify-between text-xs text-muted-foreground mt-1">
           <span>$0</span><span className="text-gradient-brand font-bold">${prize.toLocaleString()}+</span><span>$100K</span>
         </div>

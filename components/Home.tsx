@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Play } from "lucide-react";
 import { HeroAnimation } from "@/components/HeroAnimation";
 
 type Event = {
@@ -28,6 +28,13 @@ const STATUS_MAP: Record<string, Event["status"]> = {
 const FALLBACK_COVER =
   "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=1200&q=80";
 
+// Hero character cutouts, rotated as a crossfading carousel. Drop transparent
+// PNGs at these paths in /public to have a game character bleed off the right
+// edge of the hero (see the design mockup).
+// Add more paths here to rotate them as a crossfading carousel.
+const HERO_CHARACTERS = ["/hero-2.png"];
+const HERO_ROTATE_MS = 4000;
+
 function toUiEvent(row: any): Event {
   return {
     id: String(row.id),
@@ -48,85 +55,203 @@ export default function Home({ initialEvents }: { initialEvents: any[] }) {
   // Data arrives from the server — map once, no fetch, no loading state
   const [events] = useState<Event[]>(() => (initialEvents ?? []).map(toUiEvent));
 
-  const featured = events[0];
-
   const liveAll = events.filter((e) => e.status === "Live");
   const upcomingAll = events.filter((e) => e.status !== "Completed");
-
-  const live = liveAll.slice(0, 3);
-  const upcoming = upcomingAll.slice(0, 4);
 
   return (
     <div className="p-6 space-y-8 max-w-[1600px] mx-auto">
       {/* Hero */}
-      <section className="relative overflow-hidden rounded-3xl border border-brand shadow-card-soft bg-card">
-        <img src={featured?.cover || FALLBACK_COVER} alt="" className="absolute inset-0 size-full object-cover opacity-50" />
-        <div className="absolute inset-0 bg-gradient-to-r from-background via-background/85 to-background/30" />
-        <HeroAnimation />
-        <div className="relative p-8 md:p-28 flex flex-col items-center text-center gap-6">
-          <div className="max-w-2xl">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gradient-brand text-white text-xs font-semibold shadow-glow">
-              Where Esport Winners Get Paid
+      <section className="relative overflow-hidden rounded-3xl border border-brand shadow-card-soft min-h-[460px] md:min-h-[600px]">
+        {/* Clipped backdrop: gradient + particles + spotlight (rounded so the
+            character can bleed past the card edges without square corners). */}
+        <div className="absolute inset-0 overflow-hidden rounded-3xl">
+          <div className="absolute inset-0 bg-[radial-gradient(120%_120%_at_72%_25%,#C084FC_0%,#A855F7_30%,#7C3AED_58%,#5B21B6_100%)]" />
+          <HeroAnimation />
+          {/* Spotlight behind the character to balance the empty middle */}
+          <div className="absolute right-[16%] top-1/2 aspect-square w-[55%] -translate-y-1/2 rounded-full bg-[radial-gradient(closest-side,rgba(228,200,255,0.7),transparent_72%)] blur-3xl" />
+        </div>
+
+        {/* Live pill — top-right */}
+        <div className="absolute right-5 top-5 z-20 inline-flex items-center gap-2 rounded-full bg-black/25 px-4 py-1.5 text-sm font-semibold text-white ring-1 ring-white/20 backdrop-blur-sm">
+          Live
+          <span className="size-2.5 rounded-full bg-emerald-400 shadow-[0_0_8px_2px_rgba(52,211,153,0.7)]" />
+        </div>
+
+        {/* Character carousel — spans the full card height. */}
+        <HeroCharacter />
+
+        {/* Content */}
+        <div className="relative z-10 flex min-h-[440px] items-center p-8 md:min-h-[600px] md:p-12 md:pl-16">
+          <div className="max-w-xl">
+            <div className="text-sm font-semibold uppercase tracking-[0.25em] text-white/70 md:text-base">
+              Esports Hub
             </div>
-            <h1 className="mt-4 text-4xl md:text-[169px] font-bold leading-[1.05]">
-              <span className="">TENAX</span>
+            <h1 className="mt-3 text-6xl font-bold leading-none text-white md:text-8xl">
+              Tenax
             </h1>
-            <h1 className="mt-4 text-4xl font-bold leading-[1.05]">
-              Compete in the Esports Arena
-            </h1>
-            <p className="mt-4 text-muted-foreground max-w-lg mx-auto">
+            <p className="mt-5 max-w-lg text-base text-white/80 md:text-lg">
               Join 50,000+ players battling across 40 titles. Track tournaments, climb the leaderboards, and earn glory.
             </p>
+            <Link
+              href="/events"
+              className="mt-10 inline-flex items-center gap-3 rounded-full bg-[#3b1d78] py-3 pl-7 pr-3 text-base font-semibold text-white shadow-glow transition hover:bg-[#4c268f] hover:scale-[1.02] md:text-lg"
+            >
+              Explore Tournaments
+              <span className="grid size-9 place-items-center rounded-full bg-white/20">
+                <Play className="size-4 fill-white text-white" />
+              </span>
+            </Link>
           </div>
         </div>
       </section>
 
-      <section>
-        <SectionHeader title="Live Right Now" link="/events?status=Live" showLink={liveAll.length > 3} />
-        {live.length === 0 ? (
-          <p className="text-center text-muted-foreground py-8">No live tournaments right now.</p>
-        ) : (
-          <div className="grid md:grid-cols-3 gap-4">
-            {live.map((e) => <LiveCard key={e.id} event={e} />)}
-          </div>
-        )}
-      </section>
+      <CarouselSection
+        title="Live Right Now"
+        items={liveAll}
+        empty="No live tournaments right now."
+        itemClass="w-[85%] shrink-0 snap-start sm:w-[calc((100%_-_2rem)/3)]"
+        render={(e) => <LiveCard event={e} />}
+      />
 
-      <section className="my-20">
-        <SectionHeader title="Upcoming Tournaments" link="/events?status=Upcoming" showLink={upcomingAll.length > 4} linkAtBottomMobile />
-        {upcoming.length === 0 ? (
-          <p className="text-center text-muted-foreground py-8">No upcoming tournaments yet.</p>
-        ) : (
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {upcoming.map((e) => <EventCard key={e.id} event={e} />)}
-          </div>
-        )}
-        {upcomingAll.length > 4 && (
-          <Link
-            href="/events?status=Upcoming"
-            className="sm:hidden mt-4 flex items-center justify-center gap-1 w-full py-3 rounded-xl border border-border text-sm font-semibold text-muted-foreground hover:text-primary hover:border-brand transition"
-          >
-            View all <ChevronRight className="size-4" />
-          </Link>
-        )}
-      </section>
+      <div className="my-20">
+        <CarouselSection
+          title="Upcoming Tournaments"
+          items={upcomingAll}
+          empty="No upcoming tournaments yet."
+          itemClass="w-[85%] shrink-0 snap-start sm:w-[calc((100%_-_2rem)/3)]"
+          render={(e) => <EventCard event={e} />}
+        />
+      </div>
     </div>
   );
 }
 
-function SectionHeader({ title, link, showLink, linkAtBottomMobile }: { title: string; link: string; showLink: boolean; linkAtBottomMobile?: boolean }) {
+function HeroCharacter() {
+  const [active, setActive] = useState(0);
+
+  useEffect(() => {
+    if (HERO_CHARACTERS.length < 2) return;
+    const id = setInterval(
+      () => setActive((i) => (i + 1) % HERO_CHARACTERS.length),
+      HERO_ROTATE_MS,
+    );
+    return () => clearInterval(id);
+  }, []);
+
   return (
-    <div className="relative flex items-center justify-between gap-3 mb-4 sm:justify-center">
-      <h2 className="text-2xl sm:text-4xl font-bold sm:text-center">{title}</h2>
-      {showLink && (
-        <Link href={link} className={[
-          "shrink-0 text-sm text-muted-foreground hover:text-primary items-center gap-1 sm:absolute sm:right-0 sm:inline-flex",
-          linkAtBottomMobile ? "hidden" : "inline-flex",
-        ].join(" ")}>
-          View all <ChevronRight className="size-4" />
-        </Link>
-      )}
+    <div className="pointer-events-none absolute inset-y-0 right-0 z-[15] hidden w-3/5 md:block">
+      {HERO_CHARACTERS.map((src, i) => (
+        <img
+          key={src}
+          src={src}
+          alt=""
+          onError={(e) => { e.currentTarget.style.display = "none"; }}
+          className={[
+            "animate-float absolute bottom-0 right-[12%] h-[560px] w-auto max-w-none object-contain object-bottom drop-shadow-2xl transition-opacity duration-1000",
+            i === active ? "opacity-100" : "opacity-0",
+          ].join(" ")}
+        />
+      ))}
     </div>
+  );
+}
+
+function CarouselSection({
+  title,
+  items,
+  empty,
+  itemClass,
+  render,
+}: {
+  title: string;
+  items: Event[];
+  empty: string;
+  itemClass: string;
+  render: (event: Event) => React.ReactNode;
+}) {
+  const [first, ...rest] = title.split(" ");
+  const trackRef = useRef<HTMLDivElement>(null);
+  const [atStart, setAtStart] = useState(true);
+  const [atEnd, setAtEnd] = useState(false);
+
+  // Arrows only make sense when there are more cards than the 3 that fit.
+  const showArrows = items.length > 3;
+
+  const updateEdges = () => {
+    const el = trackRef.current;
+    if (!el) return;
+    setAtStart(el.scrollLeft <= 1);
+    setAtEnd(el.scrollLeft >= el.scrollWidth - el.clientWidth - 1);
+  };
+
+  useEffect(() => {
+    if (!showArrows) return;
+    const el = trackRef.current;
+    if (!el) return;
+    updateEdges();
+    el.addEventListener("scroll", updateEdges, { passive: true });
+    window.addEventListener("resize", updateEdges);
+    return () => {
+      el.removeEventListener("scroll", updateEdges);
+      window.removeEventListener("resize", updateEdges);
+    };
+  }, [showArrows, items.length]);
+
+  const scrollByPage = (dir: 1 | -1) => {
+    const el = trackRef.current;
+    if (!el) return;
+    el.scrollBy({ left: dir * el.clientWidth * 0.85, behavior: "smooth" });
+  };
+
+  return (
+    <section>
+      <div className="relative mb-4 flex items-center justify-between gap-3 sm:justify-center">
+        <h2 className="text-2xl font-bold sm:text-center sm:text-4xl">
+          <span className="text-gradient-brand">{first}</span>
+          {rest.length > 0 ? ` ${rest.join(" ")}` : ""}
+        </h2>
+        {showArrows && (
+          <div className="flex gap-2 sm:absolute sm:right-0">
+            <CarouselArrow dir="left" active={!atStart} onClick={() => scrollByPage(-1)} />
+            <CarouselArrow dir="right" active={!atEnd} onClick={() => scrollByPage(1)} />
+          </div>
+        )}
+      </div>
+      {items.length === 0 ? (
+        <p className="py-8 text-center text-muted-foreground">{empty}</p>
+      ) : (
+        <div
+          ref={trackRef}
+          className="flex snap-x snap-mandatory gap-4 overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        >
+          {items.map((event) => (
+            <div key={event.id} className={itemClass}>
+              {render(event)}
+            </div>
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
+function CarouselArrow({ dir, active, onClick }: { dir: "left" | "right"; active: boolean; onClick: () => void }) {
+  const Icon = dir === "left" ? ChevronLeft : ChevronRight;
+  return (
+    <button
+      type="button"
+      aria-label={dir === "left" ? "Previous" : "Next"}
+      onClick={onClick}
+      disabled={!active}
+      className={[
+        "grid size-10 place-items-center rounded-full transition",
+        active
+          ? "bg-primary text-white shadow-glow hover:scale-105 active:scale-95"
+          : "cursor-not-allowed border border-border bg-card text-muted-foreground/40",
+      ].join(" ")}
+    >
+      <Icon className="size-5" />
+    </button>
   );
 }
 

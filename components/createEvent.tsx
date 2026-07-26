@@ -257,7 +257,7 @@ export default function CreateEventPage() {
           <div className="hidden lg:block">
           <SectionCard title="Preview" icon={Info}>
             <div className="rounded-xl border border-border bg-black/30 overflow-hidden">
-              <div className="aspect-[16/9] relative bg-gradient-to-br from-[#D7155C]/30 to-black flex items-center justify-center">
+              <div className="aspect-[16/9] relative bg-gradient-to-br from-[#8B5CF6]/30 to-black flex items-center justify-center">
                 {form.cover ? (<img src={form.cover} alt="" className="absolute inset-0 size-full object-cover opacity-60" />) : null}
                 <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent" />
                 <div className="relative text-center px-4">

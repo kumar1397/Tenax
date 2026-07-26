@@ -147,8 +147,8 @@ export default function ProfilePage() {
     <div className="p-6 max-w-[1400px] mx-auto">
       {/* Banner */}
       <div className="relative h-40 md:h-52 rounded-3xl overflow-hidden border border-border bg-gradient-brand-soft">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,rgba(215,21,92,0.35),transparent_60%)]" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_right,rgba(140,14,61,0.4),transparent_60%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,rgba(168,85,247,0.35),transparent_60%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_right,rgba(109,40,217,0.4),transparent_60%)]" />
       </div>
 
       {/* Header */}
