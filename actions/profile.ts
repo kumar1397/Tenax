@@ -1,6 +1,7 @@
 
 'use server'
 
+import { revalidatePath } from 'next/cache'
 import { createClient } from '@/utils/supabase/server'
 
 export async function getMyProfile() {
@@ -47,4 +48,21 @@ export async function updateProfile(form: ProfileForm) {
 
   if (error) return { error: error.message }
   return { success: true }
+}
+
+
+export async function saveContactEmail(contactEmail: string) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user?.email) return { error: "Not signed in" };
+
+  const { error } = await supabase
+    .from("Users")
+    .update({ player_email: contactEmail })
+    .eq("auth_id", user.id);
+
+  if (error) return { error: error.message };
+
+  revalidatePath("/");
+  return { success: true };
 }

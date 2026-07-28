@@ -28,6 +28,7 @@ export default function ProfilePage() {
   const [stats, setStats] = useState({ mmr: 0, winrate: 0, rank: "", hours: 0 });
   const [joined, setJoined] = useState("");
   const [email, setEmail] = useState("");
+  const [profileEmail, setProfileEmail] = useState("");
   const [authAvatar, setAuthAvatar] = useState("");
 
   // Org state
@@ -63,6 +64,7 @@ export default function ProfilePage() {
           org_id: p.org_id ?? null,
         });
         setStats({ mmr: p.mmr ?? 0, winrate: p.win_rate ?? 0, rank: p.rank ?? "Unranked", hours: p.hours_played ?? 0 });
+        setProfileEmail(p.player_email ?? "");
       }
       setLoading(false);
     });
@@ -131,7 +133,9 @@ export default function ProfilePage() {
 
   if (loading) return <div className="p-10 text-muted-foreground">Loading profile…</div>;
 
-  const displayName = form.player_name || form.handle || email.split("@")[0];
+  // Show the real email (from player_email, else auth email); never the Steam placeholder
+  const realEmail = [profileEmail, email].find((e) => e && !e.endsWith("@steam.local")) ?? "";
+  const displayName = form.player_name || form.handle || (realEmail ? realEmail.split("@")[0] : "Player");
   const initial = (displayName[0] ?? "?").toUpperCase();
   const avatarSrc = form.player_image || authAvatar;
   const currentOrg = orgs.find((o) => o.id === form.org_id) ?? null;
@@ -173,7 +177,8 @@ export default function ProfilePage() {
             )}
           </div>
           <div className="mt-1 text-sm text-muted-foreground flex flex-wrap items-center gap-3">
-            <span>{form.handle ? `@${form.handle}` : email}</span>
+            {form.handle && <span>@{form.handle}</span>}
+            {realEmail && <span>{realEmail}</span>}
             {form.region && <span className="inline-flex items-center gap-1"><MapPin className="size-3.5" /> {form.region}</span>}
             {currentOrg && (
               <span className="inline-flex items-center gap-1">

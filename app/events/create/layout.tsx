@@ -14,7 +14,7 @@ export default async function CreateEventLayout({
   const { data: row } = await supabase
     .from("Users")
     .select("role")
-    .eq("player_email", user.email)
+    .eq("auth_id", user.id)
     .single();
 
   if (row?.role !== "admin") redirect("/");

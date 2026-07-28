@@ -10,12 +10,13 @@ export async function GET(request: Request) {
     await supabase.auth.exchangeCodeForSession(code)
 
     const { data: { user } } = await supabase.auth.getUser()
-    if (user?.email) {
+    if (user) {
       const provider = user.app_metadata?.provider ?? 'email'
 
       await supabase.from('Users').upsert(
         {
-          player_email: user.email,
+          auth_id: user.id,
+          player_email: user.email ?? null,
           player_name:
             user.user_metadata?.full_name ??
             user.user_metadata?.name ??
@@ -27,7 +28,7 @@ export async function GET(request: Request) {
               : null,                                           
           auth_provider: provider,                              
         },
-        { onConflict: 'player_email' }
+        { onConflict: 'auth_id' }
       )
     }
   }

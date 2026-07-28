@@ -23,7 +23,30 @@ export async function proxy(request: NextRequest) {
     }
   )
   // Refreshes the auth token so sessions don't expire mid-use
-  await supabase.auth.getUser()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  // Hard gate: a Steam user (their auth email is the @steam.local placeholder)
+  // must provide a real email before using the app. Exempt the email page
+  // itself and all auth routes (login + OAuth/Steam callbacks) to avoid loops.
+  const path = request.nextUrl.pathname
+  const exempt = path.startsWith('/profile/email') || path.startsWith('/auth')
+  if (user && !exempt && user.email?.endsWith('@steam.local')) {
+    const { data: row } = await supabase
+      .from('Users')
+      .select('player_email')
+      .eq('auth_id', user.id)
+      .maybeSingle()
+    const hasRealEmail = !!row?.player_email && !row.player_email.endsWith('@steam.local')
+    if (!hasRealEmail) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/profile/email'
+      const redirect = NextResponse.redirect(url)
+      // Carry over the refreshed auth cookies so the session isn't dropped
+      response.cookies.getAll().forEach((c) => redirect.cookies.set(c))
+      return redirect
+    }
+  }
+
   return response
 }
 
