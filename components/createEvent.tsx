@@ -9,14 +9,13 @@ import {
 import { createEvent } from "@/actions/event";
 import { createClient } from "@/utils/supabase/client";
 
-const games = ["InvincibleVS", "2XKO", "Valorant", "Dead by Daylight"];
 const regions = ["NA", "EU", "APAC", "LATAM", "Global"];
 const formats = ["Single Elimination", "Double Elimination", "Round Robin", "Swiss"];
 
-export default function CreateEventPage() {
+export default function CreateEventPage({ games }: { games: string[] }) {
   const [form, setForm] = useState({
     title: "",
-    game: games[0],
+    game: games[0] ?? "",
     region: regions[0],
     format: formats[0],
     prize: "",

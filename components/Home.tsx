@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight, Play } from "lucide-react";
-import { HeroAnimation } from "@/components/HeroAnimation";
+import { JoinDiscord } from "@/components/JoinDiscord";
 
 type Event = {
   id: string;
@@ -28,10 +28,6 @@ const STATUS_MAP: Record<string, Event["status"]> = {
 const FALLBACK_COVER =
   "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=1200&q=80";
 
-// Hero character cutouts, rotated as a crossfading carousel. Drop transparent
-// PNGs at these paths in /public to have a game character bleed off the right
-// edge of the hero (see the design mockup).
-// Add more paths here to rotate them as a crossfading carousel.
 const HERO_CHARACTERS = ["/hero-2.png"];
 const HERO_ROTATE_MS = 4000;
 
@@ -51,33 +47,49 @@ function toUiEvent(row: any): Event {
   };
 }
 
-export default function Home({ initialEvents }: { initialEvents: any[] }) {
-  // Data arrives from the server — map once, no fetch, no loading state
+export default function Home({ initialEvents, gameCovers = {}, topPlayers = [] }: { initialEvents: any[]; gameCovers?: Record<string, string>; topPlayers?: { name: string; handle: string; image: string; mmr: number }[] }) {
   const [events] = useState<Event[]>(() => (initialEvents ?? []).map(toUiEvent));
 
   const liveAll = events.filter((e) => e.status === "Live");
   const upcomingAll = events.filter((e) => e.status !== "Completed");
 
+  // Top games ranked by total participants across their events (no extra query —
+  // aggregated from the events we already have).
+  const topGames = (() => {
+    const coverOf = (c: string) => (typeof c === "string" && /^https?:\/\//.test(c) ? c : FALLBACK_COVER);
+    const map = new Map<string, { game: string; participants: number; events: number; cover: string; _top: number }>();
+    for (const e of events) {
+      if (!e.game) continue;
+      const cur = map.get(e.game) ?? { game: e.game, participants: 0, events: 0, cover: coverOf(e.cover), _top: -1 };
+      cur.participants += e.participants;
+      cur.events += 1;
+      if (e.participants > cur._top) { cur._top = e.participants; cur.cover = coverOf(e.cover); }
+      map.set(e.game, cur);
+    }
+    return [...map.values()]
+      .sort((a, b) => b.participants - a.participants)
+      .slice(0, 5)
+      // Prefer the game's own cover from the DB; fall back to the top event's cover
+      .map(({ game, participants, events, cover }) => ({ game, participants, events, cover: gameCovers[game] || cover }));
+  })();
+
   return (
-    <div className="p-6 space-y-8 max-w-[1600px] mx-auto">
+    <div className="p-6 space-y-2 max-w-[1600px] mx-auto">
       {/* Hero */}
-      <section className="relative overflow-hidden rounded-3xl border border-brand shadow-card-soft min-h-[460px] md:min-h-[600px]">
-        {/* Clipped backdrop: gradient + particles + spotlight (rounded so the
-            character can bleed past the card edges without square corners). */}
+      <section className="relative z-10 mt-2 rounded-3xl border border-brand shadow-card-soft min-h-[460px] md:mt-12 md:min-h-[600px]">
+        {/* Backdrop — clipped to the rounded card so the character can still spill out the top */}
         <div className="absolute inset-0 overflow-hidden rounded-3xl">
           <div className="absolute inset-0 bg-[radial-gradient(120%_120%_at_72%_25%,#C084FC_0%,#A855F7_30%,#7C3AED_58%,#5B21B6_100%)]" />
-          <HeroAnimation />
-          {/* Spotlight behind the character to balance the empty middle */}
+          <CircuitBoard />
           <div className="absolute right-[16%] top-1/2 aspect-square w-[55%] -translate-y-1/2 rounded-full bg-[radial-gradient(closest-side,rgba(228,200,255,0.7),transparent_72%)] blur-3xl" />
         </div>
 
-        {/* Live pill — top-right */}
+
         <div className="absolute right-5 top-5 z-20 inline-flex items-center gap-2 rounded-full bg-black/25 px-4 py-1.5 text-sm font-semibold text-white ring-1 ring-white/20 backdrop-blur-sm">
           Live
           <span className="size-2.5 rounded-full bg-emerald-400 shadow-[0_0_8px_2px_rgba(52,211,153,0.7)]" />
         </div>
 
-        {/* Character carousel — spans the full card height. */}
         <HeroCharacter />
 
         {/* Content */}
@@ -104,7 +116,8 @@ export default function Home({ initialEvents }: { initialEvents: any[] }) {
           </div>
         </div>
       </section>
-
+    <div className="mt-20 grid gap-6 lg:grid-cols-[260px_1fr] lg:items-start">
+      <PopularGames games={topGames} />
       <CarouselSection
         title="Live Right Now"
         items={liveAll}
@@ -112,8 +125,10 @@ export default function Home({ initialEvents }: { initialEvents: any[] }) {
         itemClass="w-[85%] shrink-0 snap-start sm:w-[calc((100%_-_2rem)/3)]"
         render={(e) => <LiveCard event={e} />}
       />
+    </div>
 
-      <div className="my-20">
+      <div className="my-20 grid gap-6 lg:grid-cols-[260px_1fr] lg:items-start">
+        <TopPlayers players={topPlayers} />
         <CarouselSection
           title="Upcoming Tournaments"
           items={upcomingAll}
@@ -122,7 +137,125 @@ export default function Home({ initialEvents }: { initialEvents: any[] }) {
           render={(e) => <EventCard event={e} />}
         />
       </div>
+
+      <div className="mb-6">
+        <JoinDiscord />
+      </div>
     </div>
+  );
+}
+
+function PopularGames({ games }: { games: { game: string; participants: number; events: number; cover: string }[] }) {
+  if (games.length === 0) return null;
+  return (
+    <section className="mt-18 rounded-3xl border border-brand bg-gradient-to-b from-[#2e1b5e] to-[#191033] p-4 text-violet-50 shadow-card-soft">
+      <h2 className="mb-3 px-1 text-xl font-bold sm:text-2xl">
+        <span className="text-gradient-brand">Popular</span> Games
+      </h2>
+      <div className="space-y-1">
+        {games.map((g, i) => (
+          <Link
+            key={g.game}
+            href="/events"
+            className="group flex items-center gap-3 rounded-xl p-2 transition hover:bg-white/10"
+          >
+            <div className="relative shrink-0">
+              <img
+                src={g.cover}
+                alt=""
+                onError={(e) => { if (e.currentTarget.src !== FALLBACK_COVER) e.currentTarget.src = FALLBACK_COVER; }}
+                className="size-12 rounded-lg object-cover ring-1 ring-white/10"
+              />
+              <span className="absolute -left-1 -top-1 grid size-5 place-items-center rounded-full bg-white text-[10px] font-bold text-[#2e1b5e] shadow">
+                {i + 1}
+              </span>
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="truncate font-semibold text-white">{g.game}</div>
+              <div className="text-[11px] text-violet-200/70">
+                {g.participants.toLocaleString()} players · {g.events} {g.events === 1 ? "event" : "events"}
+              </div>
+            </div>
+            <ChevronRight className="size-4 shrink-0 text-violet-200/60 opacity-0 transition group-hover:opacity-100" />
+          </Link>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function TopPlayers({ players }: { players: { name: string; handle: string; image: string; mmr: number }[] }) {
+  if (players.length === 0) return null;
+  return (
+    <section className="mt-18 rounded-3xl border border-brand bg-gradient-to-b from-[#2e1b5e] to-[#191033] p-4 text-violet-50 shadow-card-soft">
+      <h2 className="mb-3 px-1 text-xl font-bold sm:text-2xl">
+        <span className="text-gradient-brand">Top</span> Players
+      </h2>
+      <div className="space-y-1">
+        {players.map((p, i) => (
+          <Link
+            key={`${p.name}-${i}`}
+            href="/players"
+            className="group flex items-center gap-3 rounded-xl p-2 transition hover:bg-white/10"
+          >
+            <div className="relative size-12 shrink-0">
+              {/* Initial as the base so a broken image still shows a fallback */}
+              <div className="grid size-12 place-items-center rounded-full bg-gradient-brand text-sm font-bold text-white ring-1 ring-white/10">
+                {p.name.charAt(0).toUpperCase() || "?"}
+              </div>
+              {p.image && (
+                <img
+                  src={p.image}
+                  alt=""
+                  onError={(e) => { e.currentTarget.style.display = "none"; }}
+                  className="absolute inset-0 size-12 rounded-full object-cover ring-1 ring-white/10"
+                />
+              )}
+              <span className="absolute -left-1 -top-1 grid size-5 place-items-center rounded-full bg-white text-[10px] font-bold text-[#2e1b5e] shadow">
+                {i + 1}
+              </span>
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="truncate font-semibold text-white">{p.name}</div>
+              <div className="text-[11px] text-violet-200/70">
+                {p.mmr.toLocaleString()} MMR{p.handle ? ` · @${p.handle}` : ""}
+              </div>
+            </div>
+            <ChevronRight className="size-4 shrink-0 text-violet-200/60 opacity-0 transition group-hover:opacity-100" />
+          </Link>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function CircuitBoard() {
+  return (
+    <svg
+      aria-hidden="true"
+      className="absolute inset-0 h-full w-full text-white/[0.14] [mask-image:radial-gradient(ellipse_at_center,black,transparent_88%)]"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <defs>
+        <pattern id="tenax-circuit" x="0" y="0" width="120" height="120" patternUnits="userSpaceOnUse">
+          <g fill="none" stroke="currentColor" strokeWidth="1.5">
+            <path d="M0 24 H36 V60 H84 V24 H120" />
+            <path d="M24 0 V36 H60 V84 H24 V120" />
+            <path d="M60 84 H96 V120" />
+            <path d="M84 24 V0" />
+            <path d="M96 60 H120" />
+          </g>
+          <g fill="currentColor">
+            <circle cx="36" cy="24" r="3.5" />
+            <circle cx="84" cy="60" r="3.5" />
+            <circle cx="24" cy="36" r="3.5" />
+            <circle cx="60" cy="84" r="3.5" />
+            <circle cx="96" cy="120" r="3.5" />
+          </g>
+        </pattern>
+      </defs>
+      <rect width="100%" height="100%" fill="url(#tenax-circuit)" />
+    </svg>
   );
 }
 
@@ -147,7 +280,7 @@ function HeroCharacter() {
           alt=""
           onError={(e) => { e.currentTarget.style.display = "none"; }}
           className={[
-            "animate-float absolute bottom-0 right-[12%] h-[560px] w-auto max-w-none object-contain object-bottom drop-shadow-2xl transition-opacity duration-1000",
+            "absolute -bottom-6 right-[12%] h-[700px] w-auto max-w-none object-contain object-bottom drop-shadow-2xl transition-opacity duration-1000",
             i === active ? "opacity-100" : "opacity-0",
           ].join(" ")}
         />
@@ -204,7 +337,7 @@ function CarouselSection({
   };
 
   return (
-    <section>
+    <section className="min-w-0">
       <div className="relative mb-4 flex items-center justify-between gap-3 sm:justify-center">
         <h2 className="text-2xl font-bold sm:text-center sm:text-4xl">
           <span className="text-gradient-brand">{first}</span>

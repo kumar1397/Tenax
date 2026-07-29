@@ -14,14 +14,15 @@
 
   export default async function Page() {
     const supabase = createPublicClient();
-    const { data } = await supabase
-      .from("Events")
-      .select("*")
-      .order("created_at", { ascending: false });
+    const [{ data: events }, { data: games }] = await Promise.all([
+      supabase.from("Events").select("*").order("created_at", { ascending: false }),
+      supabase.from("games").select("name").order("name"),
+    ]);
+    const gameNames = (games ?? []).map((g) => g.name).filter(Boolean);
 
     return (
       <Suspense>
-        <EventsPage initialEvents={data ?? []} />
+        <EventsPage initialEvents={events ?? []} games={gameNames} />
       </Suspense>
     );
   }

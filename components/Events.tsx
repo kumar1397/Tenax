@@ -47,7 +47,6 @@ function toUiEvent(row: any): Event {
   };
 }
 
-const gamesList = ["All", "InvincibleVS", "2XKO", "Valorant", "Dead by Daylight"];
 const regionsList = ["All", "NA", "EU", "APAC", "LATAM", "Global"];
 const statusList: Array<"All" | "Live" | "Upcoming" | "Completed"> = ["All", "Live", "Upcoming", "Completed"];
 const formatList = ["All", "Single Elim", "Double Elim", "Round Robin", "Swiss"];
@@ -67,9 +66,12 @@ const GAME_STYLE: Record<string, string> = {
 };
 const gameStyle = (g: string) => GAME_STYLE[g] ?? "bg-black/60 text-white";
 
-export default function EventsPage({ initialEvents }: { initialEvents: any[] }) {
+export default function EventsPage({ initialEvents, games = [] }: { initialEvents: any[]; games?: string[] }) {
   const { isAdmin } = useRole();
   const [events] = useState<Event[]>(() => (initialEvents ?? []).map(toUiEvent));
+
+  // Game filter options come from the `games` catalog table (data-driven)
+  const gamesList = ["All", ...games];
 
   const searchParams = useSearchParams();
 
