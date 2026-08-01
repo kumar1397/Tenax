@@ -210,7 +210,7 @@ export default function ProfilePage() {
         <div className="relative z-10 flex h-full flex-col justify-center p-6 md:p-10">
           <div className="text-xs font-semibold uppercase tracking-[0.25em] text-white/70 md:text-sm">Player Statistics</div>
           <h1 className="mt-2 text-4xl font-bold text-white md:text-6xl">{form.game || "Tenax"}</h1>
-          <p className="mt-3 max-w-md text-sm text-white/70">Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium.</p>
+          <p className="mt-3 max-w-md text-sm text-white/70">Your competitive home — track tournaments, climb the leaderboards, and show off your stats.</p>
         </div>
       </section>
 
