@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Search, SlidersHorizontal, Trophy, Users2, Calendar, MapPin, Plus, X, MoreVertical, Tv, Loader2 } from "lucide-react";
+import { Search, SlidersHorizontal, Trophy, Zap, Gamepad2, Play, Plus, X, MoreVertical, Tv, Loader2 } from "lucide-react";
 import toast from "react-hot-toast";
 import { useRole } from "./useRole";
 import { updateEventStream } from "@/actions/event";
@@ -23,6 +23,7 @@ type Event = {
   organizer: string;
   cover: string;
   streamUrl: string;
+  eventTime: string;
 };
 
 const STATUS_MAP: Record<string, Event["status"]> = {
@@ -32,7 +33,7 @@ const STATUS_MAP: Record<string, Event["status"]> = {
 };
 
 const FALLBACK_COVER =
-  "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=1200&q=80";
+  "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=1000&q=75";
 
 function toUiEvent(row: any): Event {
   return {
@@ -44,6 +45,7 @@ function toUiEvent(row: any): Event {
     prize: row.prize_pool ? `$${Number(row.prize_pool).toLocaleString()}` : "$0",
     entry: row.is_paid ? `$${row.event_fee ?? 0}` : "Free",
     startsAt: row.event_date ?? new Date().toISOString(),
+    eventTime: row.event_time ?? "",
     status: STATUS_MAP[row.event_status] ?? "Upcoming",
     participants: row.no_of_player ?? 0,
     capacity: row.total_player ?? 0,
@@ -56,7 +58,6 @@ function toUiEvent(row: any): Event {
   };
 }
 
-const gamesList = ["All", "InvincibleVS", "2XKO", "Valorant", "Dead by Daylight"];
 const regionsList = ["All", "NA", "EU", "APAC", "LATAM", "Global"];
 const statusList: Array<"All" | "Live" | "Upcoming" | "Completed"> = ["All", "Live", "Upcoming", "Completed"];
 const formatList = ["All", "Single Elim", "Double Elim", "Round Robin", "Swiss"];
@@ -68,18 +69,14 @@ const STATUS_STYLE: Record<Event["status"], string> = {
   Completed: "bg-zinc-600 text-white",
 };
 
-const GAME_STYLE: Record<string, string> = {
-  InvincibleVS: "bg-violet-500/85 text-white",
-  "2XKO": "bg-sky-500/85 text-white",
-  Valorant: "bg-rose-500/85 text-white",
-  "Dead by Daylight": "bg-teal-500/85 text-white",
-};
-const gameStyle = (g: string) => GAME_STYLE[g] ?? "bg-black/60 text-white";
 
-export default function EventsPage({ initialEvents }: { initialEvents: any[] }) {
+export default function EventsPage({ initialEvents, games = [], gameCovers = {} }: { initialEvents: any[]; games?: string[]; gameCovers?: Record<string, string> }) {
   const { isAdmin } = useRole();
   const [events, setEvents] = useState<Event[]>(() => (initialEvents ?? []).map(toUiEvent));
   const [streamEditor, setStreamEditor] = useState<Event | null>(null);
+
+  // Game filter options come from the `games` catalog table (data-driven)
+  const gamesList = ["All", ...games];
 
   const searchParams = useSearchParams();
 
@@ -127,7 +124,7 @@ export default function EventsPage({ initialEvents }: { initialEvents: any[] }) 
 
       <div>
         <div className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3">Min Prize Pool</div>
-        <input type="range" min={0} max={100000} step={1000} value={prize} onChange={(e) => setPrize(+e.target.value)} className="w-full accent-[#D7155C]" />
+        <input type="range" min={0} max={100000} step={1000} value={prize} onChange={(e) => setPrize(+e.target.value)} className="w-full accent-[#8B5CF6]" />
         <div className="flex justify-between text-xs text-muted-foreground mt-1">
           <span>$0</span><span className="text-gradient-brand font-bold">${prize.toLocaleString()}+</span><span>$100K</span>
         </div>
@@ -223,24 +220,81 @@ export default function EventsPage({ initialEvents }: { initialEvents: any[] }) 
 
         <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-5 items-start">
           {filtered.map((e) => (
-            <Link href={`/events/${e.id}`} key={e.id} className="rounded-2xl border border-border bg-card/60 overflow-hidden shadow-card-soft">
-              <div className="aspect-[16/9] relative overflow-hidden">
+            <Link href={`/events/${e.id}`} key={e.id} className="group flex flex-col overflow-hidden rounded-2xl border border-border bg-card/60 shadow-card-soft">
+              {/* Cover */}
+              <div className="relative aspect-[16/10] overflow-hidden">
                 <img
                   src={e.cover}
                   alt={e.title}
+                  loading="lazy"
+                  decoding="async"
                   onError={(ev) => { if (ev.currentTarget.src !== FALLBACK_COVER) ev.currentTarget.src = FALLBACK_COVER; }}
                   className="size-full object-cover"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-card via-transparent to-transparent" />
-                <div className="absolute top-3 left-3 flex gap-2">
-                  <span className={["px-2.5 py-1 rounded-full text-[10px] font-bold", STATUS_STYLE[e.status]].join(" ")}>
-                    {e.status === "Live" && <span className="inline-block size-1.5 rounded-full bg-white mr-1 align-middle animate-pulse" />}
-                    {e.status.toUpperCase()}
+                <div className="absolute inset-0 bg-gradient-to-t from-card via-card/20 to-transparent" />
+
+                {/* Status pill */}
+                <span className={["absolute left-3 top-3 inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-bold", STATUS_STYLE[e.status]].join(" ")}>
+                  {e.status === "Live" && <span className="size-1.5 rounded-full bg-white animate-pulse" />}
+                  {e.status.toUpperCase()}
+                </span>
+
+                {/* Live "watching" pill */}
+                {e.status === "Live" && (
+                  <span className="absolute right-3 top-3 inline-flex items-center gap-1.5 rounded-full bg-black/55 px-2.5 py-1 text-[10px] font-semibold text-white backdrop-blur-sm">
+                    <span className="size-1.5 rounded-full bg-emerald-400" />
+                    {(e.participants * 12).toLocaleString()} watching
                   </span>
-                  <span className={["px-2.5 py-1 rounded-full text-[10px] font-semibold", gameStyle(e.game)].join(" ")}>{e.game}</span>
+                )}
+
+                {/* Play button — live events only */}
+                {e.status === "Live" && (
+                  <div className="absolute inset-0 grid place-items-center">
+                    <span className="grid size-14 place-items-center rounded-full bg-white/15 ring-2 ring-white/70 backdrop-blur-sm transition group-hover:scale-105">
+                      <Play className="size-5 translate-x-0.5 fill-white text-white" />
+                    </span>
+                  </div>
+                )}
+
+                {/* Game thumbnail */}
+                {gameCovers[e.game] && (
+                  <div className="absolute bottom-3 right-3 size-11 overflow-hidden rounded-lg ring-1 ring-white/25 shadow-lg">
+                    <img
+                      src={gameCovers[e.game]}
+                      alt={e.game}
+                      loading="lazy"
+                      decoding="async"
+                      onError={(ev) => { ev.currentTarget.parentElement!.style.display = "none"; }}
+                      className="size-full object-cover"
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* Body */}
+              <div className="flex flex-1 flex-col p-4">
+                <div className="text-[11px] text-muted-foreground">{formatWhen(e.startsAt, e.eventTime)}</div>
+
+                <div className="mt-1.5 flex items-center gap-2">
+                  <Gamepad2 className="size-4 shrink-0 text-primary" />
+                  <div className="truncate font-bold">{e.title}</div>
                 </div>
-                <div className="absolute bottom-3 right-3 px-2.5 py-1 rounded-md bg-gradient-brand text-white text-xs font-bold shadow-glow">{e.prize}</div>
-                {isAdmin && (e.status === "Upcoming" || e.status === "Live") && (
+
+                <div className="mt-4 grid grid-cols-2 gap-3">
+                  <div className="flex items-start gap-2">
+                    <Trophy className="mt-0.5 size-4 shrink-0 text-primary" />
+                    <div className="min-w-0">
+                      <div className="text-[11px] text-muted-foreground">Prize Pool</div>
+                      <div className="truncate text-sm font-bold">{e.prize}</div>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <Zap className="mt-0.5 size-4 shrink-0 text-primary" />
+                    <div className="min-w-0">
+                      <div className="text-[11px] text-muted-foreground">Game Mode</div>
+                      <div className="truncate text-sm font-bold">{e.format || "—"}</div>
+                    </div>
+                    {isAdmin && (e.status === "Upcoming" || e.status === "Live") && (
                   <button
                     type="button"
                     aria-label="Add stream URL"
@@ -252,15 +306,17 @@ export default function EventsPage({ initialEvents }: { initialEvents: any[] }) 
                   </button>
                 )}
               </div>
-              <div className="p-4">
-                <div className="font-bold truncate">{e.title}</div>
-                <div className="mt-3 grid grid-cols-3 gap-2 text-[13px]">
-                  <Meta icon={Calendar} text={new Date(e.startsAt).toLocaleDateString(undefined, { month: "short", day: "numeric" })} />
-                  <Meta icon={MapPin} text={e.region} />
-                  <Meta icon={Users2} text={`${e.participants}/${e.capacity}`} />
                 </div>
-                <div className="mt-3 h-1.5 rounded-full bg-secondary overflow-hidden">
-                  <div className="h-full bg-gradient-brand" style={{ width: `${e.capacity ? (e.participants / e.capacity) * 100 : 0}%` }} />
+
+                {/* Participants */}
+                <div className="mt-auto pt-4">
+                  <div className="mb-1.5 flex items-center justify-between text-[11px] text-muted-foreground">
+                    <span>{e.participants}/{e.capacity || "∞"} signed for the battle</span>
+                    <span>{e.capacity ? Math.round((e.participants / e.capacity) * 100) : 0}%</span>
+                  </div>
+                  <div className="h-1.5 overflow-hidden rounded-full bg-secondary">
+                    <div className="h-full bg-gradient-brand" style={{ width: `${e.capacity ? Math.min(100, (e.participants / e.capacity) * 100) : 0}%` }} />
+                  </div>
                 </div>
               </div>
             </Link>
@@ -346,6 +402,17 @@ function FilterGroup({ label, options, value, onChange }: { label: string; optio
   );
 }
 
-function Meta({ icon: Icon, text }: any) {
-  return <div className="flex items-center gap-1.5 font-semibold text-foreground/85"><Icon className="size-4 text-primary shrink-0" />{text}</div>;
+function fmtTime(time: string) {
+  const [hRaw, m] = time.slice(0, 5).split(":");
+  let h = parseInt(hRaw, 10);
+  if (Number.isNaN(h)) return "";
+  const ampm = h >= 12 ? "PM" : "AM";
+  h = h % 12 || 12;
+  return `${h}:${m ?? "00"} ${ampm}`;
+}
+
+function formatWhen(startsAt: string, time: string) {
+  const date = new Date(startsAt).toLocaleDateString(undefined, { day: "2-digit", month: "short", year: "numeric" });
+  const t = time ? fmtTime(time) : "";
+  return t ? `${date} · starting at ${t}` : date;
 }

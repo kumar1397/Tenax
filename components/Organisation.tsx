@@ -66,7 +66,7 @@ export default function OrgLeaderboard({ initialOrgs }: { initialOrgs: OrgRow[] 
                 </div>
                 {isFirst && <Crown className="absolute top-1.5 right-1.5 md:top-3 md:right-3 size-4 md:size-5 text-primary" />}
                 {o.logo
-                  ? <img src={o.logo} alt="" className="size-10 md:size-16 mx-auto rounded-lg md:rounded-2xl bg-secondary" />
+                  ? <img src={o.logo} alt="" loading="lazy" decoding="async" className="size-10 md:size-16 mx-auto rounded-lg md:rounded-2xl bg-secondary" />
                   : <div className="size-10 md:size-16 mx-auto rounded-lg md:rounded-2xl bg-secondary grid place-items-center"><Building2 className="size-4 md:size-7 text-muted-foreground" /></div>}
                 <div className="mt-2 md:mt-3 font-bold text-xs md:text-lg truncate">{o.name}</div>
                 <div className="text-[10px] md:text-xs text-muted-foreground truncate">{o.tricode} · {o.viewMembers}p</div>
@@ -93,7 +93,7 @@ export default function OrgLeaderboard({ initialOrgs }: { initialOrgs: OrgRow[] 
               )}
               <div className="flex items-center gap-3 min-w-0">
                 {o.logo
-                  ? <img src={o.logo} alt="" className="size-9 rounded-lg bg-secondary shrink-0" />
+                  ? <img src={o.logo} alt="" loading="lazy" decoding="async" className="size-9 rounded-lg bg-secondary shrink-0" />
                   : <div className="size-9 rounded-lg bg-secondary grid place-items-center shrink-0"><Building2 className="size-4 text-muted-foreground" /></div>}
                 <div className="min-w-0">
                   <div className="font-bold truncate">{o.name}</div>

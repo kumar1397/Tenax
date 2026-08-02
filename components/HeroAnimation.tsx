@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 /**
  * Atmospheric hero background:
- * - Breathing 45deg crimson→wine→black gradient
+ * - Breathing 45deg violet→purple→black gradient
  * - Sparse drifting ember particles (canvas, soft glow)
  * - Slow radial heartbeat glow behind headline
  * Respects prefers-reduced-motion and scales density on mobile.
@@ -38,7 +38,7 @@ export function HeroAnimation() {
     };
     let embers: Ember[] = [];
 
-    const colors = ["#D7155C", "#F06090"];
+    const colors = ["#8B5CF6", "#C084FC"];
 
     function spawn(initialY?: number): Ember {
       const maxLife = 6 + Math.random() * 8; // seconds

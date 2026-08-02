@@ -16,7 +16,7 @@ export type Event = {
   };
   
   const covers = [
-    "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=1200&q=80",
+    "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=1000&q=75",
     "https://images.unsplash.com/photo-1538481199705-c710c4e965fc?w=1200&q=80",
     "https://images.unsplash.com/photo-1511512578047-dfb367046420?w=1200&q=80",
     "https://images.unsplash.com/photo-1493711662062-fa541adb3fc8?w=1200&q=80",
@@ -81,7 +81,7 @@ export type Event = {
     winrate: 45 + (i * 3) % 40,
     game: games[i % games.length],
     region: regions[i % regions.length],
-    avatar: `https://api.dicebear.com/9.x/bottts-neutral/svg?seed=${h}&backgroundColor=8C0E3D,D7155C,1a0a14`,
+    avatar: `https://api.dicebear.com/9.x/bottts-neutral/svg?seed=${h}&backgroundColor=6D28D9,8B5CF6,1a0b2e`,
     status: (["Online", "In Match", "Offline", "Online", "In Match"] as const)[i % 5],
   }));
   

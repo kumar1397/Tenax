@@ -79,7 +79,7 @@ export default function EventDetailClient({ event, roster, canFinalize = false }
     <div className="max-w-[1600px] mx-auto">
       {/* Hero */}
       <div className="relative h-[320px] md:h-[400px]">
-        <img src={event.cover} alt={event.title} className="absolute inset-0 size-full object-cover" />
+        <img src={event.cover} alt={event.title} decoding="async" className="absolute inset-0 size-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/70 to-background/40" />
         <div className="absolute inset-0 bg-gradient-brand-soft" />
         <div className="relative h-full p-6 md:p-10 flex flex-col justify-between">
@@ -165,7 +165,7 @@ export default function EventDetailClient({ event, roster, canFinalize = false }
                 <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-3">
                   {roster.map((p) => (
                     <div key={p.id} className="flex items-center gap-3 p-3 rounded-xl bg-secondary/40 border border-border hover:border-brand transition">
-                      <img src={p.avatar} alt="" className="size-10 rounded-lg bg-secondary" />
+                      <img src={p.avatar} alt="" loading="lazy" decoding="async" className="size-10 rounded-lg bg-secondary" />
                       <div className="min-w-0">
                         <div className="font-semibold truncate">{p.name}</div>
                         <div className="text-[11px] text-muted-foreground truncate">{p.org || p.team || "—"}</div>

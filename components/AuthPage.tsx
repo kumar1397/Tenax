@@ -66,7 +66,7 @@ export default function AuthPage() {
   return (
     <div className="relative min-h-screen flex items-center justify-center px-4 overflow-hidden">
       <div className="absolute inset-0 bg-gradient-brand-soft" />
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(215,21,92,0.25),transparent_50%),radial-gradient(circle_at_70%_80%,rgba(215,21,92,0.15),transparent_50%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(139,92,246,0.25),transparent_50%),radial-gradient(circle_at_70%_80%,rgba(139,92,246,0.15),transparent_50%)]" />
 
       <div className="relative w-full max-w-md">
         <Link href="/" className="flex items-center justify-center gap-2 mb-6">

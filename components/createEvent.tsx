@@ -9,14 +9,13 @@ import {
 import { createEvent } from "@/actions/event";
 import { createClient } from "@/utils/supabase/client";
 
-const games = ["InvincibleVS", "2XKO", "Valorant", "Dead by Daylight"];
 const regions = ["NA", "EU", "APAC", "LATAM", "Global"];
 const formats = ["Single Elimination", "Double Elimination", "Round Robin", "Swiss"];
 
-export default function CreateEventPage() {
+export default function CreateEventPage({ games }: { games: string[] }) {
   const [form, setForm] = useState({
     title: "",
-    game: games[0],
+    game: games[0] ?? "",
     region: regions[0],
     format: formats[0],
     prize: "",
@@ -257,7 +256,7 @@ export default function CreateEventPage() {
           <div className="hidden lg:block">
           <SectionCard title="Preview" icon={Info}>
             <div className="rounded-xl border border-border bg-black/30 overflow-hidden">
-              <div className="aspect-[16/9] relative bg-gradient-to-br from-[#D7155C]/30 to-black flex items-center justify-center">
+              <div className="aspect-[16/9] relative bg-gradient-to-br from-[#8B5CF6]/30 to-black flex items-center justify-center">
                 {form.cover ? (<img src={form.cover} alt="" className="absolute inset-0 size-full object-cover opacity-60" />) : null}
                 <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent" />
                 <div className="relative text-center px-4">
