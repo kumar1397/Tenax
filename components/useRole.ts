@@ -9,11 +9,11 @@ export function useRole() {
   useEffect(() => {
     const supabase = createClient();
     supabase.auth.getUser().then(async ({ data }) => {
-      if (!data.user?.email) { setRole(null); setLoading(false); return; }
+      if (!data.user) { setRole(null); setLoading(false); return; }
       const { data: row } = await supabase
         .from("Users")
         .select("role")
-        .eq("player_email", data.user.email)
+        .eq("auth_id", data.user.id)
         .single();
       setRole(row?.role ?? null);
       setLoading(false);

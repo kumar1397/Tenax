@@ -81,7 +81,7 @@ export default async function EventDetail({ params }: { params: Promise<{ id: st
   let canFinalize = false;
   if (user?.email) {
     const { data: me } = await supabase
-      .from("Users").select("role").eq("player_email", user.email).single();
+      .from("Users").select("role").eq("auth_id", user.id).single();
     canFinalize = me?.role === "admin";
   }
 

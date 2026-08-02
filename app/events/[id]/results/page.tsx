@@ -12,7 +12,7 @@ export default async function ResultsPage({ params }: { params: Promise<{ id: st
     const { data: { user } } = await supabase.auth.getUser();
     if (!user?.email) redirect("/auth");
     const { data: me } = await supabase
-        .from("Users").select("role").eq("player_email", user.email).single();
+        .from("Users").select("role").eq("auth_id", user.id).single();
     if (me?.role !== "admin") redirect(`/events/${eventId}`);
 
     const [eventRes, participantsRes] = await Promise.all([

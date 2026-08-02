@@ -3,8 +3,10 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Search, SlidersHorizontal, Trophy, Zap, Gamepad2, Play, Plus, X } from "lucide-react";
+import { Search, SlidersHorizontal, Trophy, Zap, Gamepad2, Play, Plus, X, MoreVertical, Tv, Loader2 } from "lucide-react";
+import toast from "react-hot-toast";
 import { useRole } from "./useRole";
+import { updateEventStream } from "@/actions/event";
 
 type Event = {
   id: string;
@@ -20,6 +22,7 @@ type Event = {
   capacity: number;
   organizer: string;
   cover: string;
+  streamUrl: string;
   eventTime: string;
 };
 
@@ -29,6 +32,8 @@ const STATUS_MAP: Record<string, Event["status"]> = {
   completed: "Completed",
 };
 
+const FALLBACK_COVER =
+  "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=1200&q=80";
 
 function toUiEvent(row: any): Event {
   return {
@@ -44,8 +49,11 @@ function toUiEvent(row: any): Event {
     participants: row.no_of_player ?? 0,
     capacity: row.total_player ?? 0,
     organizer: row.organizer ?? "—",
-    cover: row.cover_image,
-    eventTime: row.event_time ?? "",
+    // Only trust real http(s) URLs — falls back for null/empty/junk values
+    cover: typeof row.cover_image === "string" && /^https?:\/\//.test(row.cover_image)
+      ? row.cover_image
+      : FALLBACK_COVER,
+    streamUrl: row.stream_url ?? "",
   };
 }
 
@@ -63,7 +71,8 @@ const STATUS_STYLE: Record<Event["status"], string> = {
 
 export default function EventsPage({ initialEvents, games = [], gameCovers = {} }: { initialEvents: any[]; games?: string[]; gameCovers?: Record<string, string> }) {
   const { isAdmin } = useRole();
-  const [events] = useState<Event[]>(() => (initialEvents ?? []).map(toUiEvent));
+  const [events, setEvents] = useState<Event[]>(() => (initialEvents ?? []).map(toUiEvent));
+  const [streamEditor, setStreamEditor] = useState<Event | null>(null);
 
   // Game filter options come from the `games` catalog table (data-driven)
   const gamesList = ["All", ...games];
@@ -208,12 +217,17 @@ export default function EventsPage({ initialEvents, games = [], gameCovers = {} 
           </aside>
         </div>
 
-        <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-5">
+        <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-5 items-start">
           {filtered.map((e) => (
             <Link href={`/events/${e.id}`} key={e.id} className="group flex flex-col overflow-hidden rounded-2xl border border-border bg-card/60 shadow-card-soft">
               {/* Cover */}
               <div className="relative aspect-[16/10] overflow-hidden">
-                <img src={e.cover} alt={e.title} onError={(ev) => { ev.currentTarget.style.visibility = "hidden"; }} className="size-full object-cover" />
+                <img
+                  src={e.cover}
+                  alt={e.title} onError={(ev) => { ev.currentTarget.style.visibility = "hidden"; }}
+                  onError={(ev) => { if (ev.currentTarget.src !== FALLBACK_COVER) ev.currentTarget.src = FALLBACK_COVER; }}
+                  className="size-full object-cover"
+                />
                 <div className="absolute inset-0 bg-gradient-to-t from-card via-card/20 to-transparent" />
 
                 {/* Status pill */}
@@ -275,7 +289,18 @@ export default function EventsPage({ initialEvents, games = [], gameCovers = {} 
                       <div className="text-[11px] text-muted-foreground">Game Mode</div>
                       <div className="truncate text-sm font-bold">{e.format || "—"}</div>
                     </div>
-                  </div>
+                    {isAdmin && (e.status === "Upcoming" || e.status === "Live") && (
+                  <button
+                    type="button"
+                    aria-label="Add stream URL"
+                    title={e.streamUrl ? "Edit stream URL" : "Add stream URL"}
+                    onClick={(ev) => { ev.preventDefault(); ev.stopPropagation(); setStreamEditor(e); }}
+                    className="absolute top-3 right-3 z-10 grid place-items-center size-8 rounded-full bg-black/60 text-white hover:bg-black/80 transition"
+                  >
+                    <MoreVertical className="size-4" />
+                  </button>
+                )}
+              </div>
                 </div>
 
                 {/* Participants */}
@@ -297,6 +322,59 @@ export default function EventsPage({ initialEvents, games = [], gameCovers = {} 
               No tournaments match your filters.
             </div>
           )}
+        </div>
+      </div>
+
+      {streamEditor && (
+        <StreamUrlModal
+          event={streamEditor}
+          onClose={() => setStreamEditor(null)}
+          onSaved={(url) => setEvents((prev) => prev.map((x) => (x.id === streamEditor.id ? { ...x, streamUrl: url } : x)))}
+        />
+      )}
+    </div>
+  );
+}
+
+function StreamUrlModal({ event, onClose, onSaved }: { event: Event; onClose: () => void; onSaved: (url: string) => void }) {
+  const [url, setUrl] = useState(event.streamUrl ?? "");
+  const [saving, setSaving] = useState(false);
+
+  const save = async () => {
+    setSaving(true);
+    const res = await updateEventStream(Number(event.id), url);
+    setSaving(false);
+    if (res?.error) { toast.error(res.error); return; }
+    toast.success("Stream URL saved");
+    onSaved(url.trim());
+    onClose();
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 grid place-items-center p-4">
+      <div className="absolute inset-0 bg-background/70 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-card-soft space-y-4">
+        <div className="flex items-center gap-2">
+          <Tv className="size-5 text-primary" />
+          <h3 className="font-bold text-lg">{event.streamUrl ? "Edit" : "Add"} stream URL</h3>
+        </div>
+        <p className="text-sm text-muted-foreground truncate">{event.title}</p>
+        <input
+          value={url}
+          onChange={(e) => setUrl(e.target.value)}
+          placeholder="https://twitch.tv/... or youtube.com/..."
+          autoFocus
+          className="w-full bg-secondary/60 border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-brand placeholder:text-muted-foreground"
+        />
+        <div className="flex gap-2 justify-end">
+          <button onClick={onClose} className="px-4 py-2 rounded-lg border border-border text-sm hover:bg-secondary/40 transition">Cancel</button>
+          <button
+            onClick={save}
+            disabled={saving}
+            className="px-4 py-2 rounded-lg bg-gradient-brand text-white text-sm font-semibold shadow-glow hover:scale-[1.02] transition disabled:opacity-60 inline-flex items-center gap-2"
+          >
+            {saving && <Loader2 className="size-4 animate-spin" />} Save
+          </button>
         </div>
       </div>
     </div>

@@ -29,7 +29,7 @@ export async function createEvent(form: EventForm) {
   const { data: row } = await supabase
     .from('Users')
     .select('role')
-    .eq('player_email', user.email)
+    .eq('auth_id', user.id)
     .single()
   if (row?.role !== 'admin') return { error: 'Only admins can create events.' }
 
@@ -269,12 +269,34 @@ export async function submitEventResults(eventId: number, podium: PodiumEntry[])
   if (!user?.email) return { error: "You must be signed in." };
 
   const { data: me } = await supabase
-    .from("Users").select("role").eq("player_email", user.email).single();
+    .from("Users").select("role").eq("auth_id", user.id).single();
   if (me?.role !== "admin") return { error: "Only admins can finalize events." };
 
   const { error } = await supabase
     .from("Events")
     .update({ leaderboard: podium, event_status: "completed" })
+    .eq("id", eventId);
+
+  if (error) return { error: error.message };
+
+  revalidatePath(`/events/${eventId}`);
+  revalidatePath("/events");
+  return { success: true };
+}
+
+export async function updateEventStream(eventId: number, streamUrl: string) {
+  const supabase = await createClient();
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "You must be signed in." };
+
+  const { data: me } = await supabase
+    .from("Users").select("role").eq("auth_id", user.id).single();
+  if (me?.role !== "admin") return { error: "Only admins can edit events." };
+
+  const { error } = await supabase
+    .from("Events")
+    .update({ stream_url: streamUrl.trim() || null })
     .eq("id", eventId);
 
   if (error) return { error: error.message };
