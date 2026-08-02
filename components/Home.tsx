@@ -27,7 +27,7 @@ const STATUS_MAP: Record<string, Event["status"]> = {
 };
 
 const FALLBACK_COVER =
-  "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=1200&q=80";
+  "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=1000&q=75";
 
 const HERO_CHARACTERS = ["/hero-2.png"];
 const HERO_ROTATE_MS = 4000;
@@ -175,6 +175,8 @@ function PopularGames({ games }: { games: { game: string; participants: number; 
               <img
                 src={g.cover}
                 alt=""
+                loading="lazy"
+                decoding="async"
                 onError={(e) => { if (e.currentTarget.src !== FALLBACK_COVER) e.currentTarget.src = FALLBACK_COVER; }}
                 className="size-12 rounded-lg object-cover ring-1 ring-white/10"
               />
@@ -219,6 +221,8 @@ function TopPlayers({ players }: { players: { name: string; handle: string; imag
                 <img
                   src={p.image}
                   alt=""
+                  loading="lazy"
+                  decoding="async"
                   onError={(e) => { e.currentTarget.style.display = "none"; }}
                   className="absolute inset-0 size-12 rounded-full object-cover ring-1 ring-white/10"
                 />
@@ -290,6 +294,8 @@ function HeroCharacter() {
           key={src}
           src={src}
           alt=""
+          loading="lazy"
+          decoding="async"
           onError={(e) => { e.currentTarget.style.display = "none"; }}
           className={[
             "absolute -bottom-6 right-[12%] h-[700px] w-auto max-w-none object-contain object-bottom drop-shadow-2xl transition-opacity duration-1000",
@@ -443,7 +449,7 @@ function LiveCard({ event }: { event: Event }) {
           <>
             {/* Cover — links to event page */}
             <Link href={`/events/${event.id}`}>
-              <img src={event.cover} alt={event.title} className="size-full object-cover" />
+              <img src={event.cover} alt={event.title} loading="lazy" decoding="async" className="size-full object-cover" />
               <div className="absolute inset-0 bg-gradient-to-t from-card via-card/40 to-transparent" />
             </Link>
 
@@ -495,7 +501,7 @@ function EventCard({ event }: { event: Event }) {
   return (
     <Link href={`/events/${event.id}`} className="relative overflow-hidden rounded-2xl border border-border shadow-card-soft">
       <div className="aspect-[16/10] relative">
-        <img src={event.cover} alt={event.title} className="size-full object-cover" />
+        <img src={event.cover} alt={event.title} loading="lazy" decoding="async" className="size-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-t from-card via-card/40 to-transparent" />
         <div className="absolute top-3 left-3 flex items-center gap-2">
           <StatusBadge status={event.status} />

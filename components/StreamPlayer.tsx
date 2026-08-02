@@ -126,7 +126,7 @@ export function StreamPlayer({ event, avatar }: { event: EventVM; avatar?: strin
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
           {avatar ? (
-            <img src={avatar} alt="" className="size-12 rounded-full object-cover ring-2 ring-brand" />
+            <img src={avatar} alt="" loading="lazy" decoding="async" className="size-12 rounded-full object-cover ring-2 ring-brand" />
           ) : (
             <div className="grid size-12 place-items-center rounded-full bg-gradient-brand font-bold text-white ring-2 ring-brand">
               {(event.organizer[0] ?? "?").toUpperCase()}

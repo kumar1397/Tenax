@@ -5,7 +5,7 @@ import EventDetailClient, { type EventVM, type RosterEntry } from "@/components/
 import { createClient } from "@/utils/supabase/server";
 
 const FALLBACK_COVER =
-  "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=1200&q=80";
+  "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=1000&q=75";
 
 const STATUS_MAP: Record<string, EventVM["status"]> = {
   upcoming: "Upcoming",

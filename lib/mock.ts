@@ -16,7 +16,7 @@ export type Event = {
   };
   
   const covers = [
-    "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=1200&q=80",
+    "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=1000&q=75",
     "https://images.unsplash.com/photo-1538481199705-c710c4e965fc?w=1200&q=80",
     "https://images.unsplash.com/photo-1511512578047-dfb367046420?w=1200&q=80",
     "https://images.unsplash.com/photo-1493711662062-fa541adb3fc8?w=1200&q=80",

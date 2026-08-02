@@ -33,7 +33,7 @@ const STATUS_MAP: Record<string, Event["status"]> = {
 };
 
 const FALLBACK_COVER =
-  "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=1200&q=80";
+  "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=1000&q=75";
 
 function toUiEvent(row: any): Event {
   return {
@@ -45,6 +45,7 @@ function toUiEvent(row: any): Event {
     prize: row.prize_pool ? `$${Number(row.prize_pool).toLocaleString()}` : "$0",
     entry: row.is_paid ? `$${row.event_fee ?? 0}` : "Free",
     startsAt: row.event_date ?? new Date().toISOString(),
+    eventTime: row.event_time ?? "",
     status: STATUS_MAP[row.event_status] ?? "Upcoming",
     participants: row.no_of_player ?? 0,
     capacity: row.total_player ?? 0,
@@ -224,7 +225,9 @@ export default function EventsPage({ initialEvents, games = [], gameCovers = {} 
               <div className="relative aspect-[16/10] overflow-hidden">
                 <img
                   src={e.cover}
-                  alt={e.title} onError={(ev) => { ev.currentTarget.style.visibility = "hidden"; }}
+                  alt={e.title}
+                  loading="lazy"
+                  decoding="async"
                   onError={(ev) => { if (ev.currentTarget.src !== FALLBACK_COVER) ev.currentTarget.src = FALLBACK_COVER; }}
                   className="size-full object-cover"
                 />
@@ -259,6 +262,8 @@ export default function EventsPage({ initialEvents, games = [], gameCovers = {} 
                     <img
                       src={gameCovers[e.game]}
                       alt={e.game}
+                      loading="lazy"
+                      decoding="async"
                       onError={(ev) => { ev.currentTarget.parentElement!.style.display = "none"; }}
                       className="size-full object-cover"
                     />

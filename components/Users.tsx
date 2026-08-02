@@ -44,7 +44,7 @@ function toPlayer(row: any): Player {
 function Avatar({ src, name, className = "" }: { src?: string; name: string; className?: string }) {
   const initial = (name?.trim()?.[0] ?? "?").toUpperCase();
   if (src) {
-    return <img src={src} alt={name} className={`object-cover bg-secondary ${className}`} />;
+    return <img src={src} alt={name} loading="lazy" decoding="async" className={`object-cover bg-secondary ${className}`} />;
   }
   return (
     <div className={`bg-gradient-brand grid place-items-center text-white font-bold ${className}`}>
@@ -166,7 +166,7 @@ export default function UsersPage({ initialPlayers }: { initialPlayers: any[] })
                 <Avatar src={p.avatar} name={p.name} className="size-12 md:size-20 mx-auto rounded-xl md:rounded-2xl text-base md:text-2xl" />
                 <div className="mt-2 md:mt-3 font-bold text-xs md:text-lg truncate">{p.name}</div>
                 <div className="text-[10px] md:text-xs text-muted-foreground flex items-center justify-center gap-1 md:gap-1.5 truncate">
-                  {p.orgLogo && <img src={p.orgLogo} alt="" className="size-3 md:size-4 rounded" />}
+                  {p.orgLogo && <img src={p.orgLogo} alt="" loading="lazy" decoding="async" className="size-3 md:size-4 rounded" />}
                   <span className="truncate">{p.orgTricode || p.game}</span>
                 </div>
                 <div className="mt-2 md:mt-3 text-sm md:text-2xl font-bold text-gradient-brand">{p.mmr.toLocaleString()}<span className="text-[10px] md:text-base"> MMR</span></div>
@@ -253,7 +253,7 @@ export default function UsersPage({ initialPlayers }: { initialPlayers: any[] })
                 </div>
               </div>
               <div className="hidden lg:flex items-center gap-2 min-w-0">
-                {p.orgLogo && <img src={p.orgLogo} alt="" className="size-6 rounded bg-secondary shrink-0" />}
+                {p.orgLogo && <img src={p.orgLogo} alt="" loading="lazy" decoding="async" className="size-6 rounded bg-secondary shrink-0" />}
                 <span className="text-sm font-semibold truncate">{p.orgTricode || "\u2014"}</span>
               </div>
               <div className="hidden lg:block text-sm truncate">{p.game}</div>
