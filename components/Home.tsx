@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ChevronLeft, ChevronRight, Play, PlayCircle } from "lucide-react";
 import { JoinDiscord } from "@/components/JoinDiscord";
 
@@ -59,11 +60,17 @@ function getTwitchChannel(url: string): string | null {
   }
 }
 
-export default function Home({ initialEvents, gameCovers = {}, topPlayers = [] }: { initialEvents: any[]; gameCovers?: Record<string, string>; topPlayers?: { name: string; handle: string; image: string; mmr: number }[] }) {
+export default function Home({ initialEvents, gameCovers = {} }: { initialEvents: any[]; gameCovers?: Record<string, string> }) {
   const [events] = useState<Event[]>(() => (initialEvents ?? []).map(toUiEvent));
 
   const liveAll = events.filter((e) => e.status === "Live");
   const upcomingAll = events.filter((e) => e.status !== "Completed");
+
+  // Last 4 completed events, most recent first (derived from events we already have)
+  const recentCompleted = events
+    .filter((e) => e.status === "Completed")
+    .sort((a, b) => new Date(b.startsAt).getTime() - new Date(a.startsAt).getTime())
+    .slice(0, 4);
 
   // Top games ranked by total participants across their events (no extra query —
   // aggregated from the events we already have).
@@ -140,7 +147,7 @@ export default function Home({ initialEvents, gameCovers = {}, topPlayers = [] }
     </div>
 
       <div className="my-20 grid gap-6 lg:grid-cols-[260px_1fr] lg:items-start">
-        <TopPlayers players={topPlayers} />
+        <RecentResults events={recentCompleted} />
         <CarouselSection
           title="Upcoming Tournaments"
           items={upcomingAll}
@@ -168,7 +175,7 @@ function PopularGames({ games }: { games: { game: string; participants: number; 
         {games.map((g, i) => (
           <Link
             key={g.game}
-            href="/events"
+            href={`/events?game=${encodeURIComponent(g.game)}`}
             className="group flex items-center gap-3 rounded-xl p-2 transition hover:bg-white/10"
           >
             <div className="relative shrink-0">
@@ -198,43 +205,35 @@ function PopularGames({ games }: { games: { game: string; participants: number; 
   );
 }
 
-function TopPlayers({ players }: { players: { name: string; handle: string; image: string; mmr: number }[] }) {
-  if (players.length === 0) return null;
+function RecentResults({ events }: { events: Event[] }) {
+  if (events.length === 0) return null;
   return (
     <section className="mt-18 rounded-3xl border border-brand bg-gradient-to-b from-[#2e1b5e] to-[#191033] p-4 text-violet-50 shadow-card-soft">
       <h2 className="mb-3 px-1 text-xl font-bold sm:text-2xl">
-        <span className="text-gradient-brand">Top</span> Players
+        <span className="text-gradient-brand">Recent</span> Results
       </h2>
       <div className="space-y-1">
-        {players.map((p, i) => (
+        {events.map((e) => (
           <Link
-            key={`${p.name}-${i}`}
-            href="/players"
+            key={e.id}
+            href={`/events/${e.id}`}
             className="group flex items-center gap-3 rounded-xl p-2 transition hover:bg-white/10"
           >
-            <div className="relative size-12 shrink-0">
-              {/* Initial as the base so a broken image still shows a fallback */}
-              <div className="grid size-12 place-items-center rounded-full bg-gradient-brand text-sm font-bold text-white ring-1 ring-white/10">
-                {p.name.charAt(0).toUpperCase() || "?"}
-              </div>
-              {p.image && (
-                <img
-                  src={p.image}
-                  alt=""
-                  loading="lazy"
-                  decoding="async"
-                  onError={(e) => { e.currentTarget.style.display = "none"; }}
-                  className="absolute inset-0 size-12 rounded-full object-cover ring-1 ring-white/10"
-                />
-              )}
-              <span className="absolute -left-1 -top-1 grid size-5 place-items-center rounded-full bg-white text-[10px] font-bold text-[#2e1b5e] shadow">
-                {i + 1}
-              </span>
+            <div className="relative shrink-0">
+              <img
+                src={e.cover}
+                alt=""
+                loading="lazy"
+                decoding="async"
+                onError={(ev) => { if (ev.currentTarget.src !== FALLBACK_COVER) ev.currentTarget.src = FALLBACK_COVER; }}
+                className="size-12 rounded-lg object-cover ring-1 ring-white/10"
+              />
             </div>
             <div className="min-w-0 flex-1">
-              <div className="truncate font-semibold text-white">{p.name}</div>
+              <div className="truncate font-semibold text-white">{e.title}</div>
               <div className="text-[11px] text-violet-200/70">
-                {p.mmr.toLocaleString()} MMR{p.handle ? ` · @${p.handle}` : ""}
+                {e.prize !== "Free" ? `${e.prize} · ` : ""}
+                {new Date(e.startsAt).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
               </div>
             </div>
             <ChevronRight className="size-4 shrink-0 text-violet-200/60 opacity-0 transition group-hover:opacity-100" />
@@ -430,6 +429,29 @@ const GAME_STYLE: Record<string, string> = {
 };
 const gameStyle = (g: string) => GAME_STYLE[g] ?? "bg-black/60 text-white";
 
+// A clickable game badge → deep-links to the events page with that game filtered.
+// Rendered as a button (not a Link) because it lives inside card-level <Link>s;
+// stopPropagation prevents the card's own navigation. pointer-events-auto lets
+// it stay clickable even when its badge row is pointer-events-none.
+function GameCapsule({ game, className }: { game: string; className?: string }) {
+  const router = useRouter();
+  if (!game) return null;
+  return (
+    <button
+      type="button"
+      title={`Browse ${game} events`}
+      onClick={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        router.push(`/events?game=${encodeURIComponent(game)}`);
+      }}
+      className={["pointer-events-auto cursor-pointer transition hover:brightness-110", className].join(" ")}
+    >
+      {game}
+    </button>
+  );
+}
+
 function LiveCard({ event }: { event: Event }) {
   const [playing, setPlaying] = useState(false);
   const channel = getTwitchChannel(event.streamUrl);
@@ -475,7 +497,7 @@ function LiveCard({ event }: { event: Event }) {
               <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500 text-white text-[10px] font-bold shadow-glow">
                 <span className="size-1.5 rounded-full bg-white animate-pulse" /> LIVE
               </span>
-              <span className={["px-2.5 py-1 rounded-full text-[10px] font-semibold", gameStyle(event.game)].join(" ")}>{event.game}</span>
+              <GameCapsule game={event.game} className={["px-2.5 py-1 rounded-full text-[10px] font-semibold", gameStyle(event.game)].join(" ")} />
             </div>
             <div className="absolute top-3 right-3 px-2 py-1 rounded-md bg-gradient-brand text-white text-[11px] font-semibold pointer-events-none">
               {(event.participants * 12).toLocaleString()} viewers
@@ -505,7 +527,7 @@ function EventCard({ event }: { event: Event }) {
         <div className="absolute inset-0 bg-gradient-to-t from-card via-card/40 to-transparent" />
         <div className="absolute top-3 left-3 flex items-center gap-2">
           <StatusBadge status={event.status} />
-          <span className={["px-2.5 py-1 rounded-full text-[10px] font-semibold", gameStyle(event.game)].join(" ")}>{event.game}</span>
+          <GameCapsule game={event.game} className={["px-2.5 py-1 rounded-full text-[10px] font-semibold", gameStyle(event.game)].join(" ")} />
         </div>
         <div className="absolute top-3 right-3 px-2 py-1 rounded-md bg-gradient-brand text-white text-[11px] font-semibold">
           {new Date(event.startsAt).toLocaleDateString(undefined, { month: "short", day: "numeric" })}

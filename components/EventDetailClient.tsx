@@ -82,7 +82,7 @@ export default function EventDetailClient({ event, roster }: { event: EventVM; r
                 {event.status === "Live" && <span className="size-1.5 rounded-full bg-white animate-pulse" />}
                 {event.status.toUpperCase()}
               </span>
-              <span className="px-3 py-1 rounded-full bg-black/60 backdrop-blur text-white text-xs font-semibold">{event.game}</span>
+              <Link href={`/events?game=${encodeURIComponent(event.game)}`} title={`Browse ${event.game} events`} className="px-3 py-1 rounded-full bg-black/60 backdrop-blur text-white text-xs font-semibold transition hover:bg-black/80">{event.game}</Link>
               <span className="px-3 py-1 rounded-full bg-black/60 backdrop-blur text-white text-xs font-semibold">{event.format}</span>
             </div>
             <h1 className="text-3xl md:text-5xl font-bold max-w-3xl">{event.title}</h1>

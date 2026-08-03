@@ -12,11 +12,12 @@ const spaceGrotesk = Space_Grotesk({ variable: "--font-space-grotesk", subsets: 
 
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://crimsongg.com"),
-  title: { default: "CrimsonGG — Esports Tournaments & Players", template: "%s — CrimsonGG" },
-  description: "Discover esports tournaments, follow players, and join the competitive scene on CrimsonGG.",
-  openGraph: { type: "website", images: ["/og-default.png"] },
-  twitter: { card: "summary_large_image", images: ["/og-default.png"] },
+  metadataBase: new URL("https://tenax.gg"),
+  title: { default: "Tenax Esports — Esports Tournaments & Players", template: "%s — Tenax Esports" },
+  description: "Discover esports tournaments, follow players, and join the competitive scene on Tenax Esports.",
+  icons: { icon: "/GC.png" },
+  openGraph: { type: "website", images: ["/GC.png"] },
+  twitter: { card: "summary_large_image", images: ["/GC.png"] },
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

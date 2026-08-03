@@ -7,7 +7,6 @@ type Player = {
   id: string;
   name: string;
   handle: string;
-  game: string;
   region: string;
   mmr: number;
   rank: string;
@@ -26,7 +25,6 @@ function toPlayer(row: any): Player {
     id: String(row.id),
     name: row.player_name ?? "Unknown",
     handle: row.handle ?? "",
-    game: row.game ?? "",
     region: row.region ?? "",
     mmr: row.mmr ?? 0,
     rank: row.rank ?? "",
@@ -53,7 +51,6 @@ function Avatar({ src, name, className = "" }: { src?: string; name: string; cla
   );
 }
 
-const gameOpts = ["All", "InvincibleVS", "2XKO", "Valorant", "Dead by Daylight"];
 const regionOpts = ["All", "NA", "EU", "APAC", "LATAM", "Global"];
 type SortKey = "mmr" | "winrate" | "duration" | "org";
 const sortOpts: { value: SortKey; label: string }[] = [
@@ -68,7 +65,6 @@ export default function UsersPage({ initialPlayers }: { initialPlayers: any[] })
   const [players] = useState<Player[]>(() => (initialPlayers ?? []).map(toPlayer));
 
   const [q, setQ] = useState("");
-  const [game, setGame] = useState("All");
   const [region, setRegion] = useState("All");
   const [org, setOrg] = useState("All");
   const [sort, setSort] = useState<SortKey>("mmr");
@@ -84,7 +80,6 @@ export default function UsersPage({ initialPlayers }: { initialPlayers: any[] })
   const filtered = useMemo(() => {
     let list = players.filter((p) =>
       (!q || p.name.toLowerCase().includes(q.toLowerCase()) || p.handle.includes(q.toLowerCase())) &&
-      (game === "All" || p.game === game) &&
       (region === "All" || p.region === region) &&
       (org === "All" || p.orgName === org)
     );
@@ -97,7 +92,7 @@ export default function UsersPage({ initialPlayers }: { initialPlayers: any[] })
       }
     });
     return list;
-  }, [players, q, game, region, org, sort]);
+  }, [players, q, region, org, sort]);
 
   const top3 = filtered.slice(0, 3);
 
@@ -114,11 +109,10 @@ export default function UsersPage({ initialPlayers }: { initialPlayers: any[] })
     return () => { document.body.style.overflow = prev; };
   }, [filtersOpen]);
 
-  const resetFilters = () => { setGame("All"); setRegion("All"); setOrg("All"); setSort("mmr"); };
+  const resetFilters = () => { setRegion("All"); setOrg("All"); setSort("mmr"); };
 
   const filterControls = (
     <div className="space-y-4">
-      <Select label="Game" value={game} onChange={setGame} options={gameOpts} />
       <Select label="Region" value={region} onChange={setRegion} options={regionOpts} />
       <Select label="Org" value={org} onChange={setOrg} options={orgOpts} />
       <Select
@@ -167,7 +161,7 @@ export default function UsersPage({ initialPlayers }: { initialPlayers: any[] })
                 <div className="mt-2 md:mt-3 font-bold text-xs md:text-lg truncate">{p.name}</div>
                 <div className="text-[10px] md:text-xs text-muted-foreground flex items-center justify-center gap-1 md:gap-1.5 truncate">
                   {p.orgLogo && <img src={p.orgLogo} alt="" loading="lazy" decoding="async" className="size-3 md:size-4 rounded" />}
-                  <span className="truncate">{p.orgTricode || p.game}</span>
+                  <span className="truncate">{p.orgTricode || "—"}</span>
                 </div>
                 <div className="mt-2 md:mt-3 text-sm md:text-2xl font-bold text-gradient-brand">{p.mmr.toLocaleString()}<span className="text-[10px] md:text-base"> MMR</span></div>
                 <div className="text-[10px] md:text-xs text-muted-foreground">{p.winrate}% &middot; {p.hours.toLocaleString()}h</div>
@@ -187,7 +181,6 @@ export default function UsersPage({ initialPlayers }: { initialPlayers: any[] })
 
       {/* Desktop inline filters */}
       <div className="hidden md:flex md:flex-wrap md:items-center gap-3 mb-5">
-        <Select label="Game" value={game} onChange={setGame} options={gameOpts} />
         <Select label="Region" value={region} onChange={setRegion} options={regionOpts} />
         <Select label="Org" value={org} onChange={setOrg} options={orgOpts} />
         <div className="md:ml-auto">
@@ -230,12 +223,12 @@ export default function UsersPage({ initialPlayers }: { initialPlayers: any[] })
       </div>
 
       <div className="rounded-2xl border border-border bg-card/60 overflow-hidden">
-        <div className="grid grid-cols-[32px_1fr_72px_56px] lg:grid-cols-[50px_1fr_130px_120px_90px_110px_80px] gap-x-2 px-3 py-3 lg:px-4 text-[11px] uppercase tracking-wider text-muted-foreground font-bold border-b border-border bg-secondary/40">
-          <div>Rank</div><div>Player</div><div className="hidden lg:block">Org</div><div className="hidden lg:block">Game</div><div className="hidden lg:block">Region</div><div className="text-right">MMR</div><div className="text-right">Win %</div>
+        <div className="grid grid-cols-[32px_1fr_72px_56px] lg:grid-cols-[50px_1fr_130px_90px_110px_80px] gap-x-2 px-3 py-3 lg:px-4 text-[11px] uppercase tracking-wider text-muted-foreground font-bold border-b border-border bg-secondary/40">
+          <div>Rank</div><div>Player</div><div className="hidden lg:block">Org</div><div className="hidden lg:block">Region</div><div className="text-right">MMR</div><div className="text-right">Win %</div>
         </div>
         <div className="divide-y divide-border">
           {filtered.map((p, i) => (
-            <div key={p.id} className="grid grid-cols-[32px_1fr_72px_56px] lg:grid-cols-[50px_1fr_130px_120px_90px_110px_80px] gap-x-2 items-center px-3 py-3 lg:px-4 hover:bg-secondary/30 transition">
+            <div key={p.id} className="grid grid-cols-[32px_1fr_72px_56px] lg:grid-cols-[50px_1fr_130px_90px_110px_80px] gap-x-2 items-center px-3 py-3 lg:px-4 hover:bg-secondary/30 transition">
               <div className="font-bold text-muted-foreground">#{i + 1}</div>
               <div className="flex items-center gap-3 min-w-0">
                 <div className="relative shrink-0">
@@ -248,15 +241,14 @@ export default function UsersPage({ initialPlayers }: { initialPlayers: any[] })
                 <div className="min-w-0">
                   <div className="font-bold truncate">{p.name}</div>
                   <div className="text-[11px] text-muted-foreground truncate">@{p.handle} &middot; {p.hours.toLocaleString()}h</div>
-                  {/* Region + game surface inline on mobile where their columns are hidden */}
-                  <div className="text-[11px] text-muted-foreground truncate lg:hidden">{[p.game, p.region].filter(Boolean).join(" \u00b7 ")}</div>
+                  {/* Region surfaces inline on mobile where its column is hidden */}
+                  <div className="text-[11px] text-muted-foreground truncate lg:hidden">{p.region}</div>
                 </div>
               </div>
               <div className="hidden lg:flex items-center gap-2 min-w-0">
                 {p.orgLogo && <img src={p.orgLogo} alt="" loading="lazy" decoding="async" className="size-6 rounded bg-secondary shrink-0" />}
                 <span className="text-sm font-semibold truncate">{p.orgTricode || "\u2014"}</span>
               </div>
-              <div className="hidden lg:block text-sm truncate">{p.game}</div>
               <div className="hidden lg:block text-sm text-muted-foreground">{p.region}</div>
               <div className="text-right">
                 <div className="font-bold text-gradient-brand">{p.mmr.toLocaleString()}</div>

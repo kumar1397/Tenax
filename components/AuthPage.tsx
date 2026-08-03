@@ -70,10 +70,9 @@ export default function AuthPage() {
 
       <div className="relative w-full max-w-md">
         <Link href="/" className="flex items-center justify-center gap-2 mb-6">
-          <div className="size-10 rounded-xl bg-gradient-brand grid place-items-center shadow-glow">
-            <Trophy className="size-5 text-white" />
-          </div>
-          <span className="text-2xl font-bold text-gradient-brand">CrimsonGG</span>
+
+          <img src="/GC.png" alt="Tenax Esports" className="size-10 rounded-xl" />
+          <span className="text-2xl font-bold text-gradient-brand">Tenax Esports</span>
         </Link>
 
         <div className="rounded-3xl border border-border bg-card/80 backdrop-blur-xl p-8 shadow-card-soft">

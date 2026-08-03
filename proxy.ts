@@ -25,21 +25,25 @@ export async function proxy(request: NextRequest) {
   // Refreshes the auth token so sessions don't expire mid-use
   const { data: { user } } = await supabase.auth.getUser()
 
-  // Hard gate: a Steam user (their auth email is the @steam.local placeholder)
-  // must provide a real email before using the app. Exempt the email page
-  // itself and all auth routes (login + OAuth/Steam callbacks) to avoid loops.
+  // Hard gate for signed-in users: first-timers must complete onboarding.
+  // Onboarding also captures their email (Steam gives a placeholder, and some
+  // Discord accounts have none), so no separate email gate is needed.
   const path = request.nextUrl.pathname
-  const exempt = path.startsWith('/profile/email') || path.startsWith('/auth')
-  if (user && !exempt && user.email?.endsWith('@steam.local')) {
+  const exempt =
+    path.startsWith('/profile/onboarding') ||
+    path.startsWith('/auth')
+
+  if (user && !exempt) {
     const { data: row } = await supabase
       .from('Users')
-      .select('player_email')
+      .select('handle')
       .eq('auth_id', user.id)
       .maybeSingle()
-    const hasRealEmail = !!row?.player_email && !row.player_email.endsWith('@steam.local')
-    if (!hasRealEmail) {
+
+    // A handle is the "onboarded" marker.
+    if (!row?.handle) {
       const url = request.nextUrl.clone()
-      url.pathname = '/profile/email'
+      url.pathname = '/profile/onboarding'
       const redirect = NextResponse.redirect(url)
       // Carry over the refreshed auth cookies so the session isn't dropped
       response.cookies.getAll().forEach((c) => redirect.cookies.set(c))
@@ -51,5 +55,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)'],
+  matcher: ['/((?!_next/static|_next/image|GC.png|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)'],
 }

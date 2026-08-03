@@ -45,6 +45,7 @@ export default async function Page() {
         byGame[g] = { members: gb.members, avgMmr: gb.members ? Math.round(gb.total / gb.members) : 0 };
       }
       return {
+        id: o.id,
         name: o.name,
         tricode: o.tricode ?? "",
         logo: o.logo ?? "",

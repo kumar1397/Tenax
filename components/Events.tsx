@@ -81,7 +81,12 @@ export default function EventsPage({ initialEvents, games = [], gameCovers = {} 
   const searchParams = useSearchParams();
 
   const [q, setQ] = useState("");
-  const [game, setGame] = useState("All");
+  const [game, setGame] = useState(() => {
+    // Deep-link support: /events?game=Valorant preselects the game filter.
+    const g = searchParams.get("game");
+    if (!g) return "All";
+    return gamesList.find((x) => x.toLowerCase() === g.toLowerCase()) ?? "All";
+  });
   const [region, setRegion] = useState("All");
   const [status, setStatus] = useState<typeof statusList[number]>(() => {
     const s = searchParams.get("status");

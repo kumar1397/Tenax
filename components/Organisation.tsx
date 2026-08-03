@@ -1,9 +1,11 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import { Trophy, Medal, Crown, Building2, ChevronDown } from "lucide-react";
 
 type OrgRow = {
+  id: number;
   name: string;
   tricode: string;
   logo: string;
@@ -57,8 +59,8 @@ export default function OrgLeaderboard({ initialOrgs }: { initialOrgs: OrgRow[] 
             const rank = i === 1 ? 1 : i === 0 ? 2 : 3;
             const isFirst = rank === 1;
             return (
-              <div key={o.name} className={[
-                "relative rounded-xl md:rounded-2xl border p-2.5 md:p-5 text-center overflow-hidden",
+              <Link key={o.name} href={`/organisation/${o.id}`} className={[
+                "relative block rounded-xl md:rounded-2xl border p-2.5 md:p-5 text-center overflow-hidden transition hover:border-brand",
                 isFirst ? "md:-mt-4 bg-gradient-brand-soft border-brand shadow-glow" : "bg-card/60 border-border",
               ].join(" ")}>
                 <div className={["absolute top-1.5 left-1.5 md:top-3 md:left-3 size-5 md:size-9 rounded-md md:rounded-xl grid place-items-center bg-gradient-to-br", medalClass(rank)].join(" ")}>
@@ -72,7 +74,7 @@ export default function OrgLeaderboard({ initialOrgs }: { initialOrgs: OrgRow[] 
                 <div className="text-[10px] md:text-xs text-muted-foreground truncate">{o.tricode} · {o.viewMembers}p</div>
                 <div className="mt-2 md:mt-3 text-sm md:text-2xl font-bold text-gradient-brand">{o.viewAvg.toLocaleString()}</div>
                 <div className="text-[10px] md:text-xs text-muted-foreground">avg MMR</div>
-              </div>
+              </Link>
             );
           })}
         </div>
@@ -85,7 +87,7 @@ export default function OrgLeaderboard({ initialOrgs }: { initialOrgs: OrgRow[] 
         </div>
         <div className="divide-y divide-border">
           {ranked.map((o, i) => (
-            <div key={o.name} className="grid grid-cols-[40px_1fr_56px_84px] sm:grid-cols-[60px_1fr_120px_140px] gap-x-2 items-center px-3 py-3 sm:px-4 hover:bg-secondary/30 transition">
+            <Link href={`/organisation/${o.id}`} key={o.name} className="grid grid-cols-[40px_1fr_56px_84px] sm:grid-cols-[60px_1fr_120px_140px] gap-x-2 items-center px-3 py-3 sm:px-4 hover:bg-secondary/30 transition">
               {i < 3 ? (
                 <div className={["size-8 rounded-lg grid place-items-center bg-gradient-to-br", medalClass(i + 1)].join(" ")}><Medal className="size-4" /></div>
               ) : (
@@ -102,7 +104,7 @@ export default function OrgLeaderboard({ initialOrgs }: { initialOrgs: OrgRow[] 
               </div>
               <div className="text-sm text-right sm:text-left">{o.viewMembers}</div>
               <div className="text-right font-bold text-gradient-brand">{o.viewAvg.toLocaleString()}</div>
-            </div>
+            </Link>
           ))}
           {ranked.length === 0 && (
             <div className="py-16 text-center text-muted-foreground">
