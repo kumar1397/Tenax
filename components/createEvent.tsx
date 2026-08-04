@@ -2,12 +2,15 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import toast from "react-hot-toast";
 import {
   Trophy, Calendar, MapPin, Gamepad2, Users, DollarSign, Swords,
   Image as ImageIcon, AlignLeft, ChevronDown, Info, Lock, LogIn,
 } from "lucide-react";
 import { createEvent } from "@/actions/event";
 import { createClient } from "@/utils/supabase/client";
+import RichTextEditor from "@/components/RichTextEditor";
 
 const regions = ["NA", "EU", "APAC", "LATAM", "Global"];
 const formats = ["Single Elimination", "Double Elimination", "Round Robin", "Swiss"];
@@ -45,6 +48,8 @@ export default function CreateEventPage({ games }: { games: string[] }) {
 
   const update = (key: string, value: string) => setForm((f) => ({ ...f, [key]: value }));
 
+  const router = useRouter();
+
   const handlePublish = async () => {
     if (!loggedIn) {
       setMessage("Error: Please sign in to create an event.");
@@ -54,7 +59,9 @@ export default function CreateEventPage({ games }: { games: string[] }) {
     setMessage("");
     const res = await createEvent(form);
     setSaving(false);
-    setMessage(res.error ? `Error: ${res.error}` : "Published! ✓");
+    if (res.error) { setMessage(`Error: ${res.error}`); return; }
+    toast.success("Event published!");
+    router.push("/events");
   };
   const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -211,9 +218,12 @@ export default function CreateEventPage({ games }: { games: string[] }) {
           {/* Details */}
           <SectionCard title="Details" icon={AlignLeft}>
             <div className="space-y-5">
-              <Field label="Description" hint="Rules, schedule, and anything competitors should know">
-                <textarea value={form.description} onChange={(e) => update("description", e.target.value)} rows={5} placeholder="Describe your tournament..."
-                  className="w-full bg-card border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring/60 placeholder:text-muted-foreground resize-none" />
+              <Field label="Overview" hint="Overview, rules, schedule — use the toolbar for bold, italic, and bullet points">
+                <RichTextEditor
+                  value={form.description}
+                  onChange={(html) => update("description", html)}
+                  placeholder="Write the overview — anything competitors should know..."
+                />
               </Field>
 
               <Field label="Cover Image" hint="Upload a banner (JPG/PNG, ~16:9)">
@@ -234,10 +244,12 @@ export default function CreateEventPage({ games }: { games: string[] }) {
             </div>
           </SectionCard>
 
-          <Field label="Rules" hint="One rule per line">
-            <textarea value={form.rules} onChange={(e) => update("rules", e.target.value)} rows={4}
-              placeholder={"Must be 16+\nNo smurf accounts\nCheck-in 30 min before start"}
-              className="w-full bg-card border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring/60 placeholder:text-muted-foreground resize-none" />
+          <Field label="Rules" hint="Use the toolbar for bold, italic, and bullet points">
+            <RichTextEditor
+              value={form.rules}
+              onChange={(html) => update("rules", html)}
+              placeholder="Eligibility, conduct, check-in, format rules..."
+            />
           </Field>
 
           <Field label="Bracket URL" hint="Link to the bracket (Challonge, etc.)">

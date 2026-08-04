@@ -16,12 +16,11 @@ export function RegisterButton({ eventId }: { eventId: number }) {
     setLoading(false);
 
     if (res.success) {
-      toast.success("Registered! See you in the bracket.");
+      toast.success("Event successfully registered.");
       router.refresh();
       return;
     }
 
-    // Not signed in
     if (res.error === "You must be signed in to register.") {
       toast.error("Please sign in first.");
       router.push("/auth");

@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { sanitizeRichText } from "@/lib/richtext";
+import { RegisterButton } from "@/components/registerButton";
 import {
   Calendar, MapPin, Users2, Trophy, Clock, ChevronLeft, Shield, Zap,
   Eye, Activity, Tv, PlayCircle, Award, Info, Network, ExternalLink,
@@ -128,10 +130,16 @@ export default function EventDetailClient({ event, roster }: { event: EventVM; r
               </div>
 
               <Section title="About this tournament">
-                <p className="text-muted-foreground leading-relaxed">
-                  {event.description ||
-                    `The ${event.title} is a premier ${event.game} competition featuring ${event.format.toLowerCase()} brackets across the ${event.region} region.`}
-                </p>
+                {event.description ? (
+                  <div
+                    className="overview-html text-muted-foreground leading-relaxed"
+                    dangerouslySetInnerHTML={{ __html: sanitizeRichText(event.description) }}
+                  />
+                ) : (
+                  <p className="text-muted-foreground leading-relaxed">
+                    {`The ${event.title} is a premier ${event.game} competition featuring ${event.format.toLowerCase()} brackets across the ${event.region} region.`}
+                  </p>
+                )}
                 <div className="mt-4 flex flex-wrap gap-2">
                   {tags.map((t) => <span key={t} className="px-2.5 py-1 rounded-md bg-secondary text-xs font-semibold">{t}</span>)}
                 </div>
@@ -232,11 +240,20 @@ export default function EventDetailClient({ event, roster }: { event: EventVM; r
           {tab === "rules" && (
             <Section title="Rules" icon={Shield}>
               {event.rules ? (
-                <ul className="text-sm text-muted-foreground space-y-2">
-                  {event.rules.split("\n").filter(Boolean).map((line, i) => (
-                    <li key={i} className="flex gap-2"><Zap className="size-3.5 text-primary shrink-0 mt-0.5" /> {line}</li>
-                  ))}
-                </ul>
+                /<[a-z][\s\S]*>/i.test(event.rules) ? (
+                  // New rich-text rules (HTML from the editor)
+                  <div
+                    className="overview-html text-sm text-muted-foreground leading-relaxed"
+                    dangerouslySetInnerHTML={{ __html: sanitizeRichText(event.rules) }}
+                  />
+                ) : (
+                  // Legacy plain-text rules — one per line
+                  <ul className="text-sm text-muted-foreground space-y-2">
+                    {event.rules.split("\n").filter(Boolean).map((line, i) => (
+                      <li key={i} className="flex gap-2"><Zap className="size-3.5 text-primary shrink-0 mt-0.5" /> {line}</li>
+                    ))}
+                  </ul>
+                )
               ) : (
                 <ul className="text-sm text-muted-foreground space-y-2">
                   <li className="flex gap-2"><Zap className="size-3.5 text-primary shrink-0 mt-0.5" /> Must be 16+ to compete</li>
@@ -254,9 +271,7 @@ export default function EventDetailClient({ event, roster }: { event: EventVM; r
             <div className="rounded-2xl border border-brand bg-gradient-brand-soft p-6 shadow-card-soft">
               <div className="text-xs uppercase tracking-wider text-muted-foreground">Registration {event.entry === "Free" ? "is" : "fee"}</div>
               <div className="text-3xl font-bold text-gradient-brand mt-1">{event.entry}</div>
-              <button className="mt-4 w-full bg-gradient-brand text-white font-bold py-3 rounded-xl shadow-glow hover:scale-[1.02] transition">
-                Register Now
-              </button>
+              <RegisterButton eventId={Number(event.id)} />
             </div>
           )}
 

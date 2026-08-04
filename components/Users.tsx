@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import { Search, Trophy, Crown, TrendingUp, ChevronDown, SlidersHorizontal, X } from "lucide-react";
 
 type Player = {
@@ -151,8 +152,8 @@ export default function UsersPage({ initialPlayers }: { initialPlayers: any[] })
           {[top3[1], top3[0], top3[2]].map((p, idx) => {
             const place = idx === 1 ? 1 : idx === 0 ? 2 : 3;
             return (
-              <div key={p.id} className={[
-                "relative rounded-xl md:rounded-2xl border p-2.5 md:p-5 text-center overflow-hidden",
+              <Link key={p.id} href={`/players/${p.id}`} className={[
+                "relative block rounded-xl md:rounded-2xl border p-2.5 md:p-5 text-center overflow-hidden transition hover:border-brand",
                 place === 1 ? "md:-mt-4 bg-gradient-brand-soft border-brand shadow-glow" : "bg-card/60 border-border",
               ].join(" ")}>
                 <div className="absolute top-1.5 left-1.5 md:top-3 md:left-3 size-5 md:size-8 rounded md:rounded-lg bg-gradient-brand text-white grid place-items-center font-bold text-[10px] md:text-base shadow-glow">#{place}</div>
@@ -165,7 +166,7 @@ export default function UsersPage({ initialPlayers }: { initialPlayers: any[] })
                 </div>
                 <div className="mt-2 md:mt-3 text-sm md:text-2xl font-bold text-gradient-brand">{p.mmr.toLocaleString()}<span className="text-[10px] md:text-base"> MMR</span></div>
                 <div className="text-[10px] md:text-xs text-muted-foreground">{p.winrate}% &middot; {p.hours.toLocaleString()}h</div>
-              </div>
+              </Link>
             );
           })}
         </div>
@@ -228,7 +229,7 @@ export default function UsersPage({ initialPlayers }: { initialPlayers: any[] })
         </div>
         <div className="divide-y divide-border">
           {filtered.map((p, i) => (
-            <div key={p.id} className="grid grid-cols-[32px_1fr_72px_56px] lg:grid-cols-[50px_1fr_130px_90px_110px_80px] gap-x-2 items-center px-3 py-3 lg:px-4 hover:bg-secondary/30 transition">
+            <Link href={`/players/${p.id}`} key={p.id} className="grid grid-cols-[32px_1fr_72px_56px] lg:grid-cols-[50px_1fr_130px_90px_110px_80px] gap-x-2 items-center px-3 py-3 lg:px-4 hover:bg-secondary/30 transition">
               <div className="font-bold text-muted-foreground">#{i + 1}</div>
               <div className="flex items-center gap-3 min-w-0">
                 <div className="relative shrink-0">
@@ -259,7 +260,7 @@ export default function UsersPage({ initialPlayers }: { initialPlayers: any[] })
                   <TrendingUp className="size-3 text-primary" />{p.winrate}%
                 </span>
               </div>
-            </div>
+            </Link>
           ))}
           {filtered.length === 0 && (
             <div className="py-16 text-center text-muted-foreground">

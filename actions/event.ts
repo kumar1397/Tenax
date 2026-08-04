@@ -2,6 +2,7 @@
 import { revalidatePath } from "next/cache";
 
 import { createClient } from '@/utils/supabase/server'
+import { createAdminClient } from '@/utils/supabase/admin'
 
 export type EventForm = {
   title: string
@@ -33,10 +34,12 @@ export async function createEvent(form: EventForm) {
     .single()
   if (row?.role !== 'admin') return { error: 'Only admins can create events.' }
 
-
   const isFree = !form.entry || form.entry.toLowerCase() === 'free'
 
-  const { error } = await supabase.from('Events').insert({
+  // Admin verified above → do the privileged write with the service-role client
+  // so we never have to grant INSERT on Events to every authenticated user.
+  const admin = createAdminClient()
+  const { error } = await admin.from('Events').insert({
     event_name: form.title,
     game_name: form.game,
     event_region: form.region,
@@ -57,6 +60,10 @@ export async function createEvent(form: EventForm) {
   })
 
   if (error) return { error: error.message }
+
+  // Refresh the cached lists so the new event shows immediately after redirect
+  revalidatePath('/events')
+  revalidatePath('/')
   return { success: true }
 }
 
@@ -272,7 +279,8 @@ export async function submitEventResults(eventId: number, podium: PodiumEntry[])
     .from("Users").select("role").eq("auth_id", user.id).single();
   if (me?.role !== "admin") return { error: "Only admins can finalize events." };
 
-  const { error } = await supabase
+  const admin = createAdminClient();
+  const { error } = await admin
     .from("Events")
     .update({ leaderboard: podium, event_status: "completed" })
     .eq("id", eventId);
@@ -294,7 +302,8 @@ export async function updateEventStream(eventId: number, streamUrl: string) {
     .from("Users").select("role").eq("auth_id", user.id).single();
   if (me?.role !== "admin") return { error: "Only admins can edit events." };
 
-  const { error } = await supabase
+  const admin = createAdminClient();
+  const { error } = await admin
     .from("Events")
     .update({ stream_url: streamUrl.trim() || null })
     .eq("id", eventId);

@@ -176,3 +176,19 @@ canvas.hero-embers, .hero-gradient-breathe + canvas { filter: blur(0.4px); }
   .animate-marquee { animation: none; }
   .animate-float { animation: none; }
 }
+
+/* Placeholder for the contentEditable rich-text field when empty */
+.rte:empty::before {
+  content: attr(data-placeholder);
+  color: var(--color-muted-foreground);
+  pointer-events: none;
+}
+
+/* Rendered event overview HTML — Tailwind preflight strips list styles, so
+   restore bullets/numbers and basic emphasis for the admin-authored content. */
+.overview-html ul { list-style: disc; padding-left: 1.25rem; margin: 0.4rem 0; }
+.overview-html ol { list-style: decimal; padding-left: 1.25rem; margin: 0.4rem 0; }
+.overview-html li { margin: 0.15rem 0; }
+.overview-html p { margin: 0.4rem 0; }
+.overview-html b, .overview-html strong { font-weight: 700; color: var(--color-foreground); }
+.overview-html i, .overview-html em { font-style: italic; }
