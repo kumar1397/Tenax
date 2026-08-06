@@ -60,22 +60,23 @@ export default function CreateEventPage({ games, initial, eventId }: { games: st
       return;
     }
 
-    // All fields are required
-    const missing: string[] = [];
-    if (!form.title.trim()) missing.push("Title");
-    if (!form.game.trim()) missing.push("Game");
-    if (!form.region.trim()) missing.push("Region");
-    if (!form.format.trim()) missing.push("Format");
-    if (!form.startsAt.trim()) missing.push("Start Date & Time");
-    if (!form.prize.trim()) missing.push("Prize Pool");
-    if (!form.entry.trim()) missing.push("Entry Fee");
-    if (!form.capacity.trim()) missing.push("Max Participants");
-    if (!hasText(form.description)) missing.push("Overview");
-    if (!form.cover.trim()) missing.push("Cover Image");
-    if (!hasText(form.rules)) missing.push("Rules");
-    if (!form.bracketUrl.trim()) missing.push("Bracket URL");
-    if (!form.streamUrl.trim()) missing.push("Stream URL");
-    if (missing.length) { setMessage(`Error: Please fill in — ${missing.join(", ")}`); return; }
+    if (!isEdit) {
+      const missing: string[] = [];
+      if (!form.title.trim()) missing.push("Title");
+      if (!form.game.trim()) missing.push("Game");
+      if (!form.region.trim()) missing.push("Region");
+      if (!form.format.trim()) missing.push("Format");
+      if (!form.startsAt.trim()) missing.push("Start Date & Time");
+      if (!form.prize.trim()) missing.push("Prize Pool");
+      if (!form.entry.trim()) missing.push("Entry Fee");
+      if (!form.capacity.trim()) missing.push("Max Participants");
+      if (!hasText(form.description)) missing.push("Overview");
+      if (!form.cover.trim()) missing.push("Cover Image");
+      if (!hasText(form.rules)) missing.push("Rules");
+      if (!form.bracketUrl.trim()) missing.push("Bracket URL");
+      if (!form.streamUrl.trim()) missing.push("Stream URL");
+      if (missing.length) { setMessage(`Error: Please fill in — ${missing.join(", ")}`); return; }
+    }
 
     setSaving(true);
     setMessage("");
