@@ -3,10 +3,9 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { createPublicClient } from "@/utils/supabase/public";
 import { Trophy, Clock, Shield, Building2, Calendar, Gamepad2, TrendingUp, ArrowLeft, AtSign } from "lucide-react";
+import { deriveEventStatus } from "@/lib/eventStatus";
 
 export const revalidate = 60;
-
-const STATUS_LABEL: Record<string, string> = { upcoming: "Upcoming", ongoing: "Live", completed: "Completed" };
 
 // Same placeholder series the profile page uses (no per-period points tracked yet)
 const POINTS_SERIES = [
@@ -46,7 +45,7 @@ export default async function PlayerProfilePage({ params }: { params: Promise<{ 
       id: String(row.id),
       title: row.event_name ?? "Untitled",
       game: row.game_name ?? "",
-      status: STATUS_LABEL[row.event_status] ?? "Upcoming",
+      status: deriveEventStatus(row),
       cover: typeof row.cover_image === "string" && /^https?:\/\//.test(row.cover_image) ? row.cover_image : "",
       date: row.event_date ?? "",
     }));

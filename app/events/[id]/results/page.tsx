@@ -24,12 +24,22 @@ export default async function ResultsPage({ params }: { params: Promise<{ id: st
     const ev = eventRes.data;
     const roster = (participantsRes.data ?? []).map((r: any) => ({
         id: String(r.id),
+        userId: r.Users?.id ?? null,
         name: r.Users?.player_name ?? "Unknown",
         org: r.Users?.org_name ?? "",
         avatar: r.Users?.player_image ?? "",
     }));
 
+    const c = (ev.mmr_config ?? {}) as any;
+    const mmrConfig = {
+        first: Number(c.first) || 0,
+        second: Number(c.second) || 0,
+        third: Number(c.third) || 0,
+        restAmount: Number(c.restAmount) || 0,
+        restCount: Number(c.restCount) || 0,
+    };
+
     return (
-        <AssignPoints eventId={eventId} title={ev.event_name ?? "Event"} cover={ev.cover_image ?? ""} roster={roster} />
+        <AssignPoints eventId={eventId} title={ev.event_name ?? "Event"} cover={ev.cover_image ?? ""} roster={roster} mmrConfig={mmrConfig} />
     );
 }

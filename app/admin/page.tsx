@@ -1,12 +1,11 @@
 import type { Metadata } from "next";
 import AdminDashboard from "@/components/AdminDashboard";
 import { createPublicClient } from "@/utils/supabase/public";
+import { deriveEventStatus } from "@/lib/eventStatus";
 
 export const metadata: Metadata = { title: "Admin Control" };
 // Admin data must always be fresh (reflects deletes/edits immediately)
 export const dynamic = "force-dynamic";
-
-const STATUS_LABEL: Record<string, string> = { upcoming: "Upcoming", ongoing: "Live", completed: "Completed" };
 
 export default async function AdminPage() {
   const supabase = createPublicClient();
@@ -39,7 +38,7 @@ export default async function AdminPage() {
     game: e.game_name ?? "",
     region: e.event_region ?? "",
     format: e.event_format ?? "",
-    status: STATUS_LABEL[e.event_status] ?? "Upcoming",
+    status: deriveEventStatus(e),
     date: e.event_date ?? "",
     time: e.event_time ?? "",
     cover: typeof e.cover_image === "string" && /^https?:\/\//.test(e.cover_image) ? e.cover_image : "",

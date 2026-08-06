@@ -3,10 +3,9 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { createPublicClient } from "@/utils/supabase/public";
 import { Building2, Trophy, Users, Crown, Gamepad2, ExternalLink, ArrowLeft, TrendingUp } from "lucide-react";
+import { deriveEventStatus } from "@/lib/eventStatus";
 
 export const revalidate = 60;
-
-const STATUS_LABEL: Record<string, string> = { upcoming: "Upcoming", ongoing: "Live", completed: "Completed" };
 
 type Member = {
   id: number;
@@ -83,7 +82,7 @@ export default async function OrgDetailPage({ params }: { params: Promise<{ id: 
       id: String(row.id),
       title: row.event_name ?? "Untitled",
       game: row.game_name ?? "",
-      status: STATUS_LABEL[row.event_status] ?? "Upcoming",
+      status: deriveEventStatus(row),
       date: row.event_date ?? "",
       cover: typeof row.cover_image === "string" && /^https?:\/\//.test(row.cover_image) ? row.cover_image : "",
     }));

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ChevronLeft, ChevronRight, Play, PlayCircle } from "lucide-react";
 import { JoinDiscord } from "@/components/JoinDiscord";
+import { deriveEventStatus } from "@/lib/eventStatus";
 
 type Event = {
   id: string;
@@ -21,12 +22,6 @@ type Event = {
   streamUrl: string;
 };
 
-const STATUS_MAP: Record<string, Event["status"]> = {
-  upcoming: "Upcoming",
-  ongoing: "Live",
-  completed: "Completed",
-};
-
 const FALLBACK_COVER =
   "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=1000&q=75";
 
@@ -41,7 +36,7 @@ function toUiEvent(row: any): Event {
     region: row.event_region ?? "",
     format: row.event_format ?? "",
     prize: row.prize_pool ? `$${Number(row.prize_pool).toLocaleString()}` : "Free",
-    status: STATUS_MAP[row.event_status] ?? "Upcoming",
+    status: deriveEventStatus(row),
     participants: row.no_of_player ?? 0,
     organizer: row.organizer ?? "—",
     cover: row.cover_image || FALLBACK_COVER,

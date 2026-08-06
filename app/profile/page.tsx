@@ -7,13 +7,12 @@ import toast from "react-hot-toast";
 import { createClient } from "@/utils/supabase/client";
 import { getMyProfile, updateProfile, type ProfileForm } from "@/actions/profile";
 import { listOrgs, type Org } from "@/actions/event";
+import { deriveEventStatus } from "@/lib/eventStatus";
 import {
   Trophy, Clock, Calendar, LogOut, Shield, Loader2, Save, Building2, Pencil, Camera, X, Gamepad2, TrendingUp, AtSign, Mail,
 } from "lucide-react";
 
 const REGIONS = ["", "NA", "EU", "APAC", "LATAM", "Global"];
-
-const STATUS_LABEL: Record<string, string> = { upcoming: "Upcoming", ongoing: "Live", completed: "Completed" };
 
 // Placeholder points-over-time series (no real per-period points tracked yet)
 const POINTS_SERIES = [
@@ -102,7 +101,7 @@ export default function ProfilePage() {
             id: String(row.id),
             title: row.event_name ?? "Untitled",
             game: row.game_name ?? "",
-            status: STATUS_LABEL[row.event_status] ?? "Upcoming",
+            status: deriveEventStatus(row),
             cover: row.cover_image ?? "",
             date: row.event_date ?? "",
           }));

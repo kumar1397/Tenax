@@ -3,15 +3,10 @@ import { notFound } from "next/navigation";
 import { getEvent, getEventParticipants } from "@/actions/event";
 import EventDetailClient, { type EventVM, type RosterEntry } from "@/components/EventDetail";
 import { createClient } from "@/utils/supabase/server";
+import { deriveEventStatus } from "@/lib/eventStatus";
 
 const FALLBACK_COVER =
   "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=1000&q=75";
-
-const STATUS_MAP: Record<string, EventVM["status"]> = {
-  upcoming: "Upcoming",
-  ongoing: "Live",
-  completed: "Completed",
-};
 
 function toUiEvent(row: any): EventVM {
   return {
@@ -24,7 +19,7 @@ function toUiEvent(row: any): EventVM {
     entry: row.is_paid ? `$${row.event_fee ?? 0}` : "Free",
     startsAt: row.event_date ?? new Date().toISOString(),
     eventTime: row.event_time ?? "",
-    status: STATUS_MAP[row.event_status] ?? "Upcoming",
+    status: deriveEventStatus(row),
     participants: row.no_of_player ?? 0,
     capacity: row.total_player ?? 0,
     organizer: row.organizer ?? "—",

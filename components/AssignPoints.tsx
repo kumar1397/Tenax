@@ -3,48 +3,71 @@
 import { useMemo, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ChevronLeft, Search, Trophy, Medal, Award, X, Save } from "lucide-react";
+import { ChevronLeft, Search, Trophy, Medal, Award, X, Save, Users2 } from "lucide-react";
 import { submitEventResults } from "@/actions/event";
 
-type Roster = { id: string; name: string; org: string; avatar: string };
-type Slot = { player: Roster | null; points: number };
+type Roster = { id: string; userId: number | null; name: string; org: string; avatar: string };
+type MmrConfig = { first: number; second: number; third: number; restAmount: number; restCount: number };
+type Slot = { player: Roster | null; mmr: number };
 
 const PODIUM = [
-  { rank: 1, label: "1st Place", icon: Trophy, defaultPoints: 1000, border: "border-yellow-500/50", text: "text-yellow-400", color: "from-yellow-500/20 to-yellow-500/5" },
-  { rank: 2, label: "2nd Place", icon: Medal,  defaultPoints: 600,  border: "border-slate-300/50", text: "text-slate-200", color: "from-slate-300/20 to-slate-300/5" },
-  { rank: 3, label: "3rd Place", icon: Award,  defaultPoints: 300,  border: "border-amber-700/50", text: "text-amber-500", color: "from-amber-700/20 to-amber-700/5" },
+  { rank: 1, label: "1st Place", icon: Trophy, border: "border-yellow-500/50", text: "text-yellow-400", color: "from-yellow-500/20 to-yellow-500/5" },
+  { rank: 2, label: "2nd Place", icon: Medal, border: "border-slate-300/50", text: "text-slate-200", color: "from-slate-300/20 to-slate-300/5" },
+  { rank: 3, label: "3rd Place", icon: Award, border: "border-amber-700/50", text: "text-amber-500", color: "from-amber-700/20 to-amber-700/5" },
 ];
 
 export default function AssignPoints({
-  eventId, title, cover, roster,
-}: { eventId: number; title: string; cover: string; roster: Roster[] }) {
+  eventId, title, cover, roster, mmrConfig,
+}: { eventId: number; title: string; cover: string; roster: Roster[]; mmrConfig: MmrConfig }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [msg, setMsg] = useState("");
 
-  const [slots, setSlots] = useState<Slot[]>(PODIUM.map((p) => ({ player: null, points: p.defaultPoints })));
-  const [activeSlot, setActiveSlot] = useState<number | null>(null);
+  // Podium slots pre-filled with the MMR the admin set on the event (editable)
+  const [slots, setSlots] = useState<Slot[]>([
+    { player: null, mmr: mmrConfig.first },
+    { player: null, mmr: mmrConfig.second },
+    { player: null, mmr: mmrConfig.third },
+  ]);
+  const [participants, setParticipants] = useState<Roster[]>([]);
+  const [restAmount, setRestAmount] = useState(mmrConfig.restAmount);
+  const restCount = mmrConfig.restCount;
+
+  // Where the next picked player goes: a podium index, "rest", or nothing
+  const [target, setTarget] = useState<number | "rest" | null>(null);
   const [q, setQ] = useState("");
 
   const filtered = useMemo(() => {
-    const assigned = new Set(slots.map((s) => s.player?.id).filter(Boolean));
-    return roster.filter((p) => !assigned.has(p.id) && (!q || p.name.toLowerCase().includes(q.toLowerCase())));
-  }, [roster, slots, q]);
+    const used = new Set<string>();
+    slots.forEach((s) => s.player && used.add(s.player.id));
+    participants.forEach((p) => used.add(p.id));
+    return roster.filter((p) => !used.has(p.id) && (!q || p.name.toLowerCase().includes(q.toLowerCase())));
+  }, [roster, slots, participants, q]);
 
-  const assign = (player: Roster) => {
-    if (activeSlot === null) return;
-    setSlots((prev) => prev.map((s, i) => (i === activeSlot ? { ...s, player } : s)));
-    setActiveSlot(null); setQ("");
+  const pick = (player: Roster) => {
+    if (target === null) return;
+    if (target === "rest") {
+      if (participants.length >= restCount) { setMsg(`Error: Only ${restCount} participation slots.`); return; }
+      setParticipants((prev) => [...prev, player]);
+    } else {
+      setSlots((prev) => prev.map((s, i) => (i === target ? { ...s, player } : s)));
+      setTarget(null);
+    }
+    setMsg(""); setQ("");
   };
-  const remove = (i: number) => setSlots((prev) => prev.map((s, j) => (j === i ? { ...s, player: null } : s)));
-  const setPoints = (i: number, points: number) => setSlots((prev) => prev.map((s, j) => (j === i ? { ...s, points } : s)));
+  const removeSlot = (i: number) => setSlots((prev) => prev.map((s, j) => (j === i ? { ...s, player: null } : s)));
+  const setSlotMmr = (i: number, mmr: number) => setSlots((prev) => prev.map((s, j) => (j === i ? { ...s, mmr } : s)));
+  const removeParticipant = (id: string) => setParticipants((prev) => prev.filter((p) => p.id !== id));
 
   const submit = () => {
     if (slots.some((s) => !s.player)) { setMsg("Error: Assign a player to all 3 positions."); return; }
-    const podium = slots.map((s, i) => ({ rank: i + 1, team: s.player!.name, points: s.points }));
+    const awards = [
+      ...slots.map((s, i) => ({ userId: s.player!.userId ?? 0, rank: i + 1, mmr: s.mmr, name: s.player!.name })),
+      ...participants.map((p) => ({ userId: p.userId ?? 0, rank: 0, mmr: restAmount, name: p.name })),
+    ].filter((a) => a.userId);
     setMsg("");
     startTransition(async () => {
-      const res = await submitEventResults(eventId, podium);
+      const res = await submitEventResults(eventId, awards);
       if (res.error) { setMsg("Error: " + res.error); return; }
       router.push(`/events/${eventId}`);
       router.refresh();
@@ -65,15 +88,15 @@ export default function AssignPoints({
             <div>
               <span className="px-2 py-0.5 rounded-md bg-muted text-[10px] font-bold uppercase tracking-wider">Finalizing</span>
               <h1 className="text-2xl md:text-3xl font-bold mt-1">{title} · Results</h1>
-              <p className="text-xs text-muted-foreground">Assign points to the top three finishers</p>
+              <p className="text-xs text-muted-foreground">Assign finishers — MMR is awarded automatically on submit.</p>
             </div>
           </div>
         </div>
       </div>
 
       <div className="grid lg:grid-cols-[1fr_380px] gap-6">
-        {/* Podium */}
         <div className="space-y-4">
+          {/* Podium */}
           {PODIUM.map((p, i) => {
             const slot = slots[i]; const Icon = p.icon;
             return (
@@ -81,12 +104,11 @@ export default function AssignPoints({
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2"><Icon className={`size-5 ${p.text}`} /><div className="font-bold">{p.label}</div></div>
                   <div className="flex items-center gap-2">
-                    <label className="text-xs text-muted-foreground">Points</label>
-                    <input type="number" value={slot.points} onChange={(e) => setPoints(i, Number(e.target.value) || 0)}
+                    <label className="text-xs text-muted-foreground">MMR</label>
+                    <input type="number" value={slot.mmr} onChange={(e) => setSlotMmr(i, Number(e.target.value) || 0)}
                       className="w-24 bg-background border border-border rounded-md px-2 py-1 text-sm text-right focus:outline-none focus:ring-2 focus:ring-ring/60" />
                   </div>
                 </div>
-
                 {slot.player ? (
                   <div className="flex items-center gap-3 p-3 rounded-xl bg-background/60 border border-border">
                     <img src={slot.player.avatar} alt="" loading="lazy" decoding="async" className="size-12 rounded-lg bg-secondary" />
@@ -94,24 +116,53 @@ export default function AssignPoints({
                       <div className="font-semibold truncate">{slot.player.name}</div>
                       <div className="text-xs text-muted-foreground truncate">{slot.player.org || "—"}</div>
                     </div>
-                    <button onClick={() => remove(i)} className="p-2 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition" aria-label="Remove">
-                      <X className="size-4" />
-                    </button>
+                    <button onClick={() => removeSlot(i)} className="p-2 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition" aria-label="Remove"><X className="size-4" /></button>
                   </div>
                 ) : (
-                  <button onClick={() => setActiveSlot(i)}
+                  <button onClick={() => setTarget(i)}
                     className={["w-full py-4 rounded-xl border-2 border-dashed text-sm font-semibold transition",
-                      activeSlot === i ? "border-brand bg-gradient-brand-soft text-foreground" : "border-border text-muted-foreground hover:border-brand hover:text-foreground"].join(" ")}>
-                    {activeSlot === i ? "Pick a player from the list →" : "+ Assign player"}
+                      target === i ? "border-brand bg-gradient-brand-soft text-foreground" : "border-border text-muted-foreground hover:border-brand hover:text-foreground"].join(" ")}>
+                    {target === i ? "Pick a player from the list →" : "+ Assign player"}
                   </button>
                 )}
               </div>
             );
           })}
 
+          {/* Participation — the next N finishers each get a fixed amount */}
+          {restCount > 0 && (
+            <div className="rounded-2xl border border-border bg-card/60 p-5">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <Users2 className="size-5 text-primary" />
+                  <div className="font-bold">Participation <span className="text-sm font-normal text-muted-foreground">· next {restCount}</span></div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <label className="text-xs text-muted-foreground">MMR each</label>
+                  <input type="number" value={restAmount} onChange={(e) => setRestAmount(Number(e.target.value) || 0)}
+                    className="w-24 bg-background border border-border rounded-md px-2 py-1 text-sm text-right focus:outline-none focus:ring-2 focus:ring-ring/60" />
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                {participants.map((p) => (
+                  <div key={p.id} className="flex items-center gap-3 p-2.5 rounded-lg bg-background/60 border border-border">
+                    <img src={p.avatar} alt="" className="size-9 rounded-lg bg-secondary" />
+                    <div className="min-w-0 flex-1"><div className="font-semibold text-sm truncate">{p.name}</div></div>
+                    <button onClick={() => removeParticipant(p.id)} className="p-1.5 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground" aria-label="Remove"><X className="size-4" /></button>
+                  </div>
+                ))}
+              </div>
+              <button onClick={() => setTarget("rest")} disabled={participants.length >= restCount}
+                className={["mt-2 w-full py-3 rounded-xl border-2 border-dashed text-sm font-semibold transition disabled:opacity-40 disabled:cursor-not-allowed",
+                  target === "rest" ? "border-brand bg-gradient-brand-soft text-foreground" : "border-border text-muted-foreground hover:border-brand hover:text-foreground"].join(" ")}>
+                {participants.length >= restCount ? `All ${restCount} added` : target === "rest" ? "Pick players from the list →" : `+ Add participant (${participants.length}/${restCount})`}
+              </button>
+            </div>
+          )}
+
           <button onClick={submit} disabled={pending}
             className="w-full mt-2 inline-flex items-center justify-center gap-2 bg-gradient-brand text-white font-bold py-3.5 rounded-xl shadow-glow hover:scale-[1.01] transition disabled:opacity-50">
-            <Save className="size-4" /> {pending ? "Submitting..." : "Submit Results & Complete Event"}
+            <Save className="size-4" /> {pending ? "Submitting..." : "Submit Results & Award MMR"}
           </button>
           {msg && <p className={`text-sm text-center ${msg.startsWith("Error") ? "text-red-500" : "text-green-500"}`}>{msg}</p>}
         </div>
@@ -120,7 +171,7 @@ export default function AssignPoints({
         <aside className="rounded-2xl border border-border bg-card/60 p-5 h-fit lg:sticky lg:top-20">
           <h3 className="font-bold mb-1">Registered Players</h3>
           <p className="text-xs text-muted-foreground mb-3">
-            {activeSlot === null ? "Tap a podium slot to start assigning." : `Assigning to ${PODIUM[activeSlot].label}`}
+            {target === null ? "Tap a slot to start assigning." : target === "rest" ? "Adding participation players" : `Assigning to ${PODIUM[target].label}`}
           </p>
           <div className="relative mb-3">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
@@ -129,7 +180,7 @@ export default function AssignPoints({
           </div>
           <div className="space-y-1.5 max-h-[520px] overflow-y-auto pr-1">
             {filtered.map((p) => (
-              <button key={p.id} onClick={() => assign(p)} disabled={activeSlot === null}
+              <button key={p.id} onClick={() => pick(p)} disabled={target === null}
                 className="w-full flex items-center gap-3 p-2.5 rounded-lg border border-border bg-secondary/40 hover:border-brand hover:bg-secondary transition text-left disabled:opacity-50 disabled:cursor-not-allowed">
                 <img src={p.avatar} alt="" loading="lazy" decoding="async" className="size-9 rounded-lg bg-secondary" />
                 <div className="min-w-0 flex-1">

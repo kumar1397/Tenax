@@ -18,6 +18,22 @@ export type EventForm = {
   rules: string
   bracketUrl: string
   streamUrl: string
+  // MMR awarded on finalize
+  mmrFirst: string
+  mmrSecond: string
+  mmrThird: string
+  mmrRest: string       // fixed amount each "next N" player gets
+  mmrRestCount: string  // how many players (N) get the fixed amount
+}
+
+function toMmrConfig(form: EventForm) {
+  return {
+    first: Number(form.mmrFirst) || 0,
+    second: Number(form.mmrSecond) || 0,
+    third: Number(form.mmrThird) || 0,
+    restAmount: Number(form.mmrRest) || 0,
+    restCount: Number(form.mmrRestCount) || 0,
+  }
 }
 
 export async function createEvent(form: EventForm) {
@@ -57,6 +73,7 @@ export async function createEvent(form: EventForm) {
     cover_image: form.cover || null,
     bracket_url: form.bracketUrl || null,
     stream_url: form.streamUrl || null,
+    mmr_config: toMmrConfig(form),
   })
 
   if (error) return { error: error.message }
@@ -96,6 +113,7 @@ export async function updateEvent(eventId: number, form: EventForm) {
       cover_image: form.cover || null,
       bracket_url: form.bracketUrl || null,
       stream_url: form.streamUrl || null,
+      mmr_config: toMmrConfig(form),
     })
     .eq('id', eventId)
 
@@ -326,9 +344,9 @@ export async function createOrg(input: {
   return { data: data as Org }
 }
 
-type PodiumEntry = { rank: number; team: string; points: number };
+export type ResultAward = { userId: number; rank: number; mmr: number; name: string };
 
-export async function submitEventResults(eventId: number, podium: PodiumEntry[]) {
+export async function submitEventResults(eventId: number, awards: ResultAward[]) {
   const supabase = await createClient();
 
   const { data: { user } } = await supabase.auth.getUser();
@@ -339,15 +357,35 @@ export async function submitEventResults(eventId: number, podium: PodiumEntry[])
   if (me?.role !== "admin") return { error: "Only admins can finalize events." };
 
   const admin = createAdminClient();
+
+  // Guard: finalizing again would award MMR a second time.
+  const { data: ev } = await admin.from("Events").select("event_status").eq("id", eventId).single();
+  if (ev?.event_status === "completed") return { error: "This event is already finalized." };
+
+  // Award MMR — read current totals once, then write each new total.
+  const ids = [...new Set(awards.map((a) => a.userId).filter(Boolean))];
+  if (ids.length) {
+    const { data: users } = await admin.from("Users").select("id, mmr").in("id", ids);
+    const current = new Map((users ?? []).map((u: any) => [u.id, u.mmr ?? 0]));
+    for (const a of awards) {
+      if (!a.userId || !a.mmr) continue;
+      const next = (current.get(a.userId) ?? 0) + a.mmr;
+      const { error: uErr } = await admin.from("Users").update({ mmr: next }).eq("id", a.userId);
+      if (uErr) return { error: uErr.message };
+    }
+  }
+
+  const leaderboard = awards.map((a) => ({ rank: a.rank, team: a.name, points: a.mmr }));
   const { error } = await admin
     .from("Events")
-    .update({ leaderboard: podium, event_status: "completed" })
+    .update({ leaderboard, event_status: "completed" })
     .eq("id", eventId);
-
   if (error) return { error: error.message };
 
   revalidatePath(`/events/${eventId}`);
   revalidatePath("/events");
+  revalidatePath("/players");
+  revalidatePath("/admin");
   return { success: true };
 }
 

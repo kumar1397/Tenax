@@ -38,6 +38,11 @@ export default async function EditEventPage({ params }: { params: Promise<{ id: 
     rules: ev.event_rule ?? "",
     bracketUrl: ev.bracket_url ?? "",
     streamUrl: ev.stream_url ?? "",
+    mmrFirst: String(ev.mmr_config?.first ?? 1000),
+    mmrSecond: String(ev.mmr_config?.second ?? 600),
+    mmrThird: String(ev.mmr_config?.third ?? 300),
+    mmrRest: String(ev.mmr_config?.restAmount ?? 100),
+    mmrRestCount: String(ev.mmr_config?.restCount ?? 10),
   };
 
   const gameNames = (games ?? []).map((g) => g.name).filter(Boolean);

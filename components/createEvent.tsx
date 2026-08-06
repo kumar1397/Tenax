@@ -34,6 +34,11 @@ export default function CreateEventPage({ games, initial, eventId }: { games: st
     rules: "",
     bracketUrl: "",
     streamUrl: "",
+    mmrFirst: "1000",
+    mmrSecond: "600",
+    mmrThird: "300",
+    mmrRest: "100",
+    mmrRestCount: "10",
   });
 
   const [saving, setSaving] = useState(false);
@@ -239,6 +244,35 @@ export default function CreateEventPage({ games, initial, eventId }: { games: st
                   <input type="number" value={form.capacity} onChange={(e) => update("capacity", e.target.value)}
                     className="w-full bg-card border border-border rounded-lg pl-9 pr-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring/60" />
                 </div>
+              </Field>
+            </div>
+          </SectionCard>
+
+          {/* MMR Rewards */}
+          <SectionCard title="MMR Rewards" icon={Trophy}>
+            <p className="-mt-2 text-[11px] text-muted-foreground">
+              MMR awarded when you finalize results. The podium gets these amounts; the next N finishers each get the fixed amount.
+            </p>
+            <div className="grid gap-5 md:grid-cols-3">
+              <Field label="1st Place MMR">
+                <input type="number" value={form.mmrFirst} onChange={(e) => update("mmrFirst", e.target.value)}
+                  className="w-full bg-card border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring/60" />
+              </Field>
+              <Field label="2nd Place MMR">
+                <input type="number" value={form.mmrSecond} onChange={(e) => update("mmrSecond", e.target.value)}
+                  className="w-full bg-card border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring/60" />
+              </Field>
+              <Field label="3rd Place MMR">
+                <input type="number" value={form.mmrThird} onChange={(e) => update("mmrThird", e.target.value)}
+                  className="w-full bg-card border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring/60" />
+              </Field>
+              <Field label="Fixed MMR (next players)" hint="Each of the next N finishers gets this">
+                <input type="number" value={form.mmrRest} onChange={(e) => update("mmrRest", e.target.value)}
+                  className="w-full bg-card border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring/60" />
+              </Field>
+              <Field label="Number of next players (N)">
+                <input type="number" value={form.mmrRestCount} onChange={(e) => update("mmrRestCount", e.target.value)}
+                  className="w-full bg-card border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring/60" />
               </Field>
             </div>
           </SectionCard>
