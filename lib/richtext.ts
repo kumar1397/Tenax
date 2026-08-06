@@ -1,6 +1,4 @@
-// Minimal sanitizer for admin-authored event overview HTML. Paired with the
-// editor's paste-as-plain-text, this strips the main injection vectors so the
-// stored HTML is safe to render with dangerouslySetInnerHTML on server + client.
+
 export function sanitizeRichText(html: string): string {
   if (!html) return "";
   return html

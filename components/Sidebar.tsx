@@ -2,7 +2,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Trophy, Users, Plus, Info, Earth } from "lucide-react";
+import { Home, Trophy, Users, Info, Earth, ShieldCheck } from "lucide-react";
 import { useRole } from "./useRole";
 
 export const main = [
@@ -10,7 +10,7 @@ export const main = [
   { title: "Events", url: "/events", icon: Trophy },
   { title: "Players", url: "/players", icon: Users },
   { title: "Organisation", url: "/organisation", icon: Earth },
-  { title: "Create Event", url: "/events/create", icon: Plus, adminOnly: true },
+  { title: "Admin Control", url: "/admin", icon: ShieldCheck, adminOnly: true },
   { title: "About Us", url: "/about", icon: Info },
 ];
 

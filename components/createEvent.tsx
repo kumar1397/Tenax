@@ -8,15 +8,19 @@ import {
   Trophy, Calendar, MapPin, Gamepad2, Users, DollarSign, Swords,
   Image as ImageIcon, AlignLeft, ChevronDown, Info, Lock, LogIn,
 } from "lucide-react";
-import { createEvent } from "@/actions/event";
+import { createEvent, updateEvent, type EventForm } from "@/actions/event";
 import { createClient } from "@/utils/supabase/client";
 import RichTextEditor from "@/components/RichTextEditor";
 
 const regions = ["NA", "EU", "APAC", "LATAM", "Global"];
 const formats = ["Single Elimination", "Double Elimination", "Round Robin", "Swiss"];
 
-export default function CreateEventPage({ games }: { games: string[] }) {
-  const [form, setForm] = useState({
+// Rich-text fields hold HTML — "empty" means no actual text once tags are stripped.
+const hasText = (html: string) => html.replace(/<[^>]*>/g, "").replace(/&nbsp;/gi, " ").trim().length > 0;
+
+export default function CreateEventPage({ games, initial, eventId }: { games: string[]; initial?: EventForm; eventId?: number }) {
+  const isEdit = eventId != null;
+  const [form, setForm] = useState<EventForm>(() => initial ?? {
     title: "",
     game: games[0] ?? "",
     region: regions[0],
@@ -55,13 +59,31 @@ export default function CreateEventPage({ games }: { games: string[] }) {
       setMessage("Error: Please sign in to create an event.");
       return;
     }
+
+    // All fields are required
+    const missing: string[] = [];
+    if (!form.title.trim()) missing.push("Title");
+    if (!form.game.trim()) missing.push("Game");
+    if (!form.region.trim()) missing.push("Region");
+    if (!form.format.trim()) missing.push("Format");
+    if (!form.startsAt.trim()) missing.push("Start Date & Time");
+    if (!form.prize.trim()) missing.push("Prize Pool");
+    if (!form.entry.trim()) missing.push("Entry Fee");
+    if (!form.capacity.trim()) missing.push("Max Participants");
+    if (!hasText(form.description)) missing.push("Overview");
+    if (!form.cover.trim()) missing.push("Cover Image");
+    if (!hasText(form.rules)) missing.push("Rules");
+    if (!form.bracketUrl.trim()) missing.push("Bracket URL");
+    if (!form.streamUrl.trim()) missing.push("Stream URL");
+    if (missing.length) { setMessage(`Error: Please fill in — ${missing.join(", ")}`); return; }
+
     setSaving(true);
     setMessage("");
-    const res = await createEvent(form);
+    const res = isEdit ? await updateEvent(eventId!, form) : await createEvent(form);
     setSaving(false);
     if (res.error) { setMessage(`Error: ${res.error}`); return; }
-    toast.success("Event published!");
-    router.push("/events");
+    toast.success(isEdit ? "Event updated!" : "Event published!");
+    router.push(isEdit ? "/admin" : "/events");
   };
   const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -115,8 +137,8 @@ export default function CreateEventPage({ games }: { games: string[] }) {
 
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl md:text-4xl font-bold">Create Tournament</h1>
-        <p className="text-muted-foreground mt-1">Set up your event, define the rules, and invite competitors.</p>
+        <h1 className="text-3xl md:text-4xl font-bold">{isEdit ? "Edit Tournament" : "Create Tournament"}</h1>
+        <p className="text-muted-foreground mt-1">{isEdit ? "Update your event details and save." : "Set up your event, define the rules, and invite competitors."}</p>
       </div>
 
       <div className="grid lg:grid-cols-[1fr_360px] gap-8">
@@ -181,11 +203,16 @@ export default function CreateEventPage({ games }: { games: string[] }) {
           {/* Schedule & Prize */}
           <SectionCard title="Schedule & Prize" icon={DollarSign}>
             <div className="grid md:grid-cols-3 gap-5">
-              <Field label="Start Date">
+              <Field label="Start Date & Time">
                 <div className="relative">
-                  <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-                  <input type="datetime-local" value={form.startsAt} onChange={(e) => update("startsAt", e.target.value)}
-                    className="w-full bg-card border border-border rounded-lg pl-9 pr-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring/60" />
+                  <Calendar className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+                  <input
+                    type="datetime-local"
+                    value={form.startsAt}
+                    onChange={(e) => update("startsAt", e.target.value)}
+                    onClick={(e) => { try { (e.currentTarget as HTMLInputElement & { showPicker?: () => void }).showPicker?.(); } catch {} }}
+                    className="w-full cursor-pointer rounded-lg border border-border bg-card py-2.5 pl-9 pr-3 text-sm [color-scheme:dark] focus:outline-none focus:ring-2 focus:ring-ring/60 [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-70 [&::-webkit-calendar-picker-indicator]:invert"
+                  />
                 </div>
               </Field>
 
@@ -309,11 +336,13 @@ export default function CreateEventPage({ games }: { games: string[] }) {
           <div className="rounded-2xl border border-border bg-card/60 p-5 space-y-4">
             <button onClick={handlePublish} disabled={saving || !loggedIn}
               className="w-full py-3 rounded-xl bg-gradient-brand text-white font-semibold shadow-glow hover:scale-[1.02] transition disabled:opacity-50 disabled:cursor-not-allowed">
-              {saving ? "Publishing..." : "Publish Tournament"}
+              {saving ? (isEdit ? "Saving..." : "Publishing...") : (isEdit ? "Save Changes" : "Publish Tournament")}
             </button>
-            <button className="w-full py-3 rounded-xl bg-card border border-border text-foreground font-semibold hover:border-brand transition">
-              Save as Draft
-            </button>
+            {!isEdit && (
+              <button className="w-full py-3 rounded-xl bg-card border border-border text-foreground font-semibold hover:border-brand transition">
+                Save as Draft
+              </button>
+            )}
             {message && (
               <p className={`text-sm text-center ${message.startsWith("Error") ? "text-red-500" : "text-green-500"}`}>{message}</p>
             )}
@@ -344,7 +373,7 @@ function SectionCard({ title, icon: Icon, children }: { title: string; icon: any
 function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
   return (
     <div className="space-y-1.5">
-      <label className="text-sm font-semibold">{label}</label>
+      <label className="text-sm font-semibold">{label} <span className="text-red-400">*</span></label>
       {children}
       {hint ? <p className="text-[11px] text-muted-foreground">{hint}</p> : null}
     </div>

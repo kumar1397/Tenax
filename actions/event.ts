@@ -67,6 +67,65 @@ export async function createEvent(form: EventForm) {
   return { success: true }
 }
 
+// Admin-only: edit an existing event. Verified via the caller's session, then
+// written with the service-role client (Events is not writable by authenticated).
+export async function updateEvent(eventId: number, form: EventForm) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'You must be signed in.' }
+  const { data: row } = await supabase.from('Users').select('role').eq('auth_id', user.id).single()
+  if (row?.role !== 'admin') return { error: 'Only admins can edit events.' }
+
+  const isFree = !form.entry || form.entry.toLowerCase() === 'free'
+  const admin = createAdminClient()
+  const { error } = await admin
+    .from('Events')
+    .update({
+      event_name: form.title,
+      game_name: form.game,
+      event_region: form.region,
+      event_format: form.format,
+      event_date: form.startsAt ? form.startsAt.split('T')[0] : null,
+      event_time: form.startsAt?.includes('T') ? form.startsAt.split('T')[1] : null,
+      is_paid: !isFree,
+      event_fee: isFree ? 0 : Number(form.entry) || 0,
+      total_player: Number(form.capacity) || null,
+      prize_pool: form.prize ? Number(form.prize) : null,
+      event_description: form.description || null,
+      event_rule: form.rules || null,
+      cover_image: form.cover || null,
+      bracket_url: form.bracketUrl || null,
+      stream_url: form.streamUrl || null,
+    })
+    .eq('id', eventId)
+
+  if (error) return { error: error.message }
+  revalidatePath('/events')
+  revalidatePath(`/events/${eventId}`)
+  revalidatePath('/')
+  revalidatePath('/admin')
+  return { success: true }
+}
+
+// Admin-only: delete an event and its registrations.
+export async function deleteEvent(eventId: number) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'You must be signed in.' }
+  const { data: row } = await supabase.from('Users').select('role').eq('auth_id', user.id).single()
+  if (row?.role !== 'admin') return { error: 'Only admins can delete events.' }
+
+  const admin = createAdminClient()
+  await admin.from('event_participants').delete().eq('event_id', eventId) // clear FK rows first
+  const { error } = await admin.from('Events').delete().eq('id', eventId)
+  if (error) return { error: error.message }
+
+  revalidatePath('/events')
+  revalidatePath('/')
+  revalidatePath('/admin')
+  return { success: true }
+}
+
 export async function getEvents() {
   const supabase = await createClient()
   const { data, error } = await supabase
