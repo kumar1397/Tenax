@@ -251,7 +251,7 @@ export default function CreateEventPage({ games, initial, eventId }: { games: st
           {/* MMR Rewards */}
           <SectionCard title="MMR Rewards" icon={Trophy}>
             <p className="-mt-2 text-[11px] text-muted-foreground">
-              MMR awarded when you finalize results. The podium gets these amounts; the next N finishers each get the fixed amount.
+              MMR awarded when you finalize results. On the results page you place each player 1st–8th (ties allowed); 1st–3rd get their amounts, anyone placed 4th–8th gets the 4th–8th amount.
             </p>
             <div className="grid gap-5 md:grid-cols-3">
               <Field label="1st Place MMR">
@@ -266,12 +266,8 @@ export default function CreateEventPage({ games, initial, eventId }: { games: st
                 <input type="number" value={form.mmrThird} onChange={(e) => update("mmrThird", e.target.value)}
                   className="w-full bg-card border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring/60" />
               </Field>
-              <Field label="Fixed MMR (next players)" hint="Each of the next N finishers gets this">
+              <Field label="4th–8th Place MMR" hint="Anyone placed 4th–8th gets this">
                 <input type="number" value={form.mmrRest} onChange={(e) => update("mmrRest", e.target.value)}
-                  className="w-full bg-card border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring/60" />
-              </Field>
-              <Field label="Number of next players (N)">
-                <input type="number" value={form.mmrRestCount} onChange={(e) => update("mmrRestCount", e.target.value)}
                   className="w-full bg-card border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring/60" />
               </Field>
             </div>

@@ -370,7 +370,11 @@ export async function submitEventResults(eventId: number, awards: ResultAward[])
     for (const a of awards) {
       if (!a.userId || !a.mmr) continue;
       const next = (current.get(a.userId) ?? 0) + a.mmr;
-      const { error: uErr } = await admin.from("Users").update({ mmr: next }).eq("id", a.userId);
+      // Stamp activity so MMR decay leaves recently-active players alone.
+      const { error: uErr } = await admin
+        .from("Users")
+        .update({ mmr: next, last_active_at: new Date().toISOString() })
+        .eq("id", a.userId);
       if (uErr) return { error: uErr.message };
     }
   }

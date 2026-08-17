@@ -8,6 +8,9 @@ import {
   Medal, Crown,
 } from "lucide-react";
 import { RegisterButton } from "@/components/registerButton";
+import BracketView from "@/components/Bracket";
+import type { Bracket } from "@/lib/bracket";
+import { sanitizeRichText } from "@/lib/richtext";
 
 export type EventVM = {
   id: string;
@@ -28,6 +31,7 @@ export type EventVM = {
   description: string;
   rules: string;
   bracketUrl: string;
+  bracket: Bracket | null;
   streamUrl: string;
   impressions: number | null;
   engagement: number | null;
@@ -92,7 +96,7 @@ export default function EventDetailClient({ event, roster, canFinalize = false }
                 {event.status === "Live" && <span className="size-1.5 rounded-full bg-white animate-pulse" />}
                 {event.status.toUpperCase()}
               </span>
-              <span className="px-3 py-1 rounded-full bg-black/60 text-white text-xs font-semibold">{event.game}</span>
+              <Link href={`/events?game=${encodeURIComponent(event.game)}`} title={`Browse ${event.game} events`} className="px-3 py-1 rounded-full bg-black/60 text-white text-xs font-semibold transition hover:bg-black/80">{event.game}</Link>
               <span className="px-3 py-1 rounded-full bg-black/60 text-white text-xs font-semibold">{event.format}</span>
             </div>
             <h1 className="text-3xl md:text-5xl font-bold max-w-3xl">{event.title}</h1>
@@ -135,10 +139,16 @@ export default function EventDetailClient({ event, roster, canFinalize = false }
               </div>
 
               <Section title="About this tournament">
-                <p className="text-muted-foreground leading-relaxed">
-                  {event.description ||
-                    `The ${event.title} is a premier ${event.game} competition featuring ${event.format.toLowerCase()} brackets across the ${event.region} region.`}
-                </p>
+                {event.description ? (
+                  <div
+                    className="overview-html text-muted-foreground leading-relaxed"
+                    dangerouslySetInnerHTML={{ __html: sanitizeRichText(event.description) }}
+                  />
+                ) : (
+                  <p className="text-muted-foreground leading-relaxed">
+                    {`The ${event.title} is a premier ${event.game} competition featuring ${event.format.toLowerCase()} brackets across the ${event.region} region.`}
+                  </p>
+                )}
                 <div className="mt-4 flex flex-wrap gap-2">
                   {tags.map((t) => <span key={t} className="px-2.5 py-1 rounded-md bg-secondary text-xs font-semibold">{t}</span>)}
                 </div>
@@ -179,8 +189,19 @@ export default function EventDetailClient({ event, roster, canFinalize = false }
 
           {tab === "bracket" && (
             <Section title="Bracket" icon={Network}>
-              <UrlPanel url={event.bracketUrl} emptyText="No bracket linked yet." ctaText="Open bracket"
-                future="Full bracket management will live here in a future update." />
+              <BracketView
+                eventId={Number(event.id)}
+                bracket={event.bracket}
+                isAdmin={canFinalize}
+                status={event.status}
+                participantCount={roster.length}
+              />
+              {event.bracketUrl && (
+                <a href={event.bracketUrl} target="_blank" rel="noopener noreferrer"
+                  className="mt-4 inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-primary transition">
+                  <ExternalLink className="size-4" /> External bracket
+                </a>
+              )}
             </Section>
           )}
 
@@ -224,11 +245,16 @@ export default function EventDetailClient({ event, roster, canFinalize = false }
           {tab === "rules" && (
             <Section title="Rules" icon={Shield}>
               {event.rules ? (
-                <ul className="text-sm text-muted-foreground space-y-2">
-                  {event.rules.split("\n").filter(Boolean).map((line, i) => (
-                    <li key={i} className="flex gap-2"><Zap className="size-3.5 text-primary shrink-0 mt-0.5" /> {line}</li>
-                  ))}
-                </ul>
+                /<[a-z][\s\S]*>/i.test(event.rules) ? (
+                  <div className="overview-html text-sm text-muted-foreground leading-relaxed"
+                    dangerouslySetInnerHTML={{ __html: sanitizeRichText(event.rules) }} />
+                ) : (
+                  <ul className="text-sm text-muted-foreground space-y-2">
+                    {event.rules.split("\n").filter(Boolean).map((line, i) => (
+                      <li key={i} className="flex gap-2"><Zap className="size-3.5 text-primary shrink-0 mt-0.5" /> {line}</li>
+                    ))}
+                  </ul>
+                )
               ) : (
                 <ul className="text-sm text-muted-foreground space-y-2">
                   <li className="flex gap-2"><Zap className="size-3.5 text-primary shrink-0 mt-0.5" /> Must be 16+ to compete</li>
@@ -242,17 +268,7 @@ export default function EventDetailClient({ event, roster, canFinalize = false }
 
         {/* Sidebar */}
         <aside className="space-y-5">
-          {event.status === "Live" && canFinalize && (
-            <Link
-              href={`/events/${event.id}/results`}
-              className="block rounded-2xl border border-brand bg-gradient-brand p-5 shadow-glow hover:scale-[1.01] transition"
-            >
-              <div className="text-[10px] uppercase tracking-wider text-white/80 font-bold">Event is live</div>
-              <div className="text-lg font-bold text-white mt-0.5">Finalize & Assign Points →</div>
-              <div className="text-xs text-white/80 mt-1">Pick the top 3 and mark this event completed.</div>
-            </Link>
-          )}
-          
+
           {!isCompleted && (
             <div className="rounded-2xl border border-brand bg-gradient-brand-soft p-6 shadow-card-soft">
               <div className="text-xs uppercase tracking-wider text-muted-foreground">Registration {event.entry === "Free" ? "is" : "fee"}</div>

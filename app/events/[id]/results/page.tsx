@@ -2,6 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import { getEvent, getEventParticipants } from "@/actions/event";
 import { createClient } from "@/utils/supabase/server";
 import AssignPoints from "@/components/AssignPoints";
+import { derivePlacements, type Bracket } from "@/lib/bracket";
 
 export default async function ResultsPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;
@@ -39,7 +40,23 @@ export default async function ResultsPage({ params }: { params: Promise<{ id: st
         restCount: Number(c.restCount) || 0,
     };
 
+    // Pre-fill positions from the bracket result, if there is one.
+    // derivePlacements is keyed by Users.id; map it onto each roster row's id.
+    const placements = ev.bracket ? derivePlacements(ev.bracket as Bracket) : {};
+    const initialPositions: Record<string, number> = {};
+    for (const r of roster) {
+        const pos = r.userId != null ? placements[r.userId] : undefined;
+        if (pos && pos <= 8) initialPositions[r.id] = pos;
+    }
+
     return (
-        <AssignPoints eventId={eventId} title={ev.event_name ?? "Event"} cover={ev.cover_image ?? ""} roster={roster} mmrConfig={mmrConfig} />
+        <AssignPoints
+            eventId={eventId}
+            title={ev.event_name ?? "Event"}
+            cover={ev.cover_image ?? ""}
+            roster={roster}
+            mmrConfig={mmrConfig}
+            initialPositions={initialPositions}
+        />
     );
 }
