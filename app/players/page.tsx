@@ -4,8 +4,8 @@ import UsersPage from "@/components/Users";
 import { createPublicClient } from "@/utils/supabase/public";
 
 export const metadata: Metadata = {
-  title: "Players",
-  description: "Browse top esports players, view rankings, win rates, and stats across all games.",
+  title: "Leaderboard",
+  description: "Player leaderboard — rankings, MMR, win rates, and stats across all games.",
 };
 
 export const revalidate = 60;

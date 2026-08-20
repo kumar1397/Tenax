@@ -168,6 +168,11 @@ export default function ProfilePage() {
     return [...m.entries()].sort((a, b) => b[1] - a[1]).map(([game, count]) => ({ game, count }));
   })();
 
+  // Registered tournaments that haven't finished yet (easy to get back to),
+  // vs. completed events (history).
+  const upcomingEvents = eventsPlayed.filter((e) => e.status !== "Completed");
+  const playedEvents = eventsPlayed.filter((e) => e.status === "Completed");
+
   return (
     <div className="p-6 max-w-[1400px] mx-auto">
       {/* Banner (dummy name for now) */}
@@ -276,6 +281,32 @@ export default function ProfilePage() {
         </div>
       </div>
 
+      {/* Upcoming / registered tournaments — kept near the top so players can
+          jump straight back to events they've signed up for. */}
+      {upcomingEvents.length > 0 && (
+        <div className="mt-6">
+          <div className="mb-3 flex items-center gap-2">
+            <Calendar className="size-5 text-primary" />
+            <h2 className="text-lg font-bold">Upcoming Events</h2>
+            <span className="text-sm text-muted-foreground">({upcomingEvents.length})</span>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {upcomingEvents.map((e) => (
+              <Link key={e.id} href={`/events/${e.id}`} className="flex items-center gap-3 rounded-xl border border-brand/50 bg-gradient-brand-soft p-2.5 transition hover:border-brand">
+                <div className="size-12 shrink-0 overflow-hidden rounded-lg bg-secondary">
+                  {e.cover ? <img src={e.cover} alt="" onError={(ev) => { ev.currentTarget.style.display = "none"; }} className="size-full object-cover" /> : null}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="truncate text-sm font-semibold">{e.title}</div>
+                  <div className="text-[11px] text-muted-foreground">{e.game}{e.date ? ` · ${new Date(e.date).toLocaleDateString(undefined, { month: "short", day: "numeric" })}` : ""}</div>
+                </div>
+                <span className="shrink-0 rounded-full bg-secondary px-2 py-0.5 text-[10px] font-bold">{e.status}</span>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Points earned over time (placeholder data for now) */}
       <div className="mt-6 rounded-2xl border border-border bg-card/60 p-6">
         <div className="mb-4 flex items-center gap-2">
@@ -319,11 +350,11 @@ export default function ProfilePage() {
           <Trophy className="size-5 text-primary" />
           <h2 className="text-lg font-bold">Events Played</h2>
         </div>
-        {eventsPlayed.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No events yet — register for a tournament to see it here.</p>
+        {playedEvents.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No completed events yet.</p>
         ) : (
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {eventsPlayed.map((e) => (
+            {playedEvents.map((e) => (
               <Link key={e.id} href={`/events/${e.id}`} className="flex items-center gap-3 rounded-xl border border-border bg-card/60 p-2.5 transition hover:border-brand">
                 <div className="size-12 shrink-0 overflow-hidden rounded-lg bg-secondary">
                   {e.cover ? <img src={e.cover} alt="" onError={(ev) => { ev.currentTarget.style.display = "none"; }} className="size-full object-cover" /> : null}

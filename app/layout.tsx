@@ -5,6 +5,7 @@ import { AppSidebar } from "@/components/Sidebar";
 import { TopBar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { HotToaster } from "@/components/HotToaster";
+import { SessionTimeout } from "@/components/SessionTimeout";
 import "./globals.css";
 
 const inter = Inter({ variable: "--font-inter", subsets: ["latin"], display: "swap" });
@@ -35,6 +36,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
           </div>
         </div>
         <HotToaster />
+        <SessionTimeout />
       </body>
     </html>
   );

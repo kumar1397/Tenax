@@ -126,11 +126,6 @@ export default async function PlayerProfilePage({ params }: { params: Promise<{ 
                   <Calendar className="size-3.5" /> Joined {joined}
                 </span>
               )}
-              {p.player_code && (
-                <span className="inline-flex items-center rounded-full bg-secondary px-3 py-1 font-mono text-sm font-semibold text-foreground/70 ring-1 ring-border">
-                  {p.player_code}
-                </span>
-              )}
             </div>
           </div>
         </div>

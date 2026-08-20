@@ -8,7 +8,7 @@ import { useRole } from "./useRole";
 export const main = [
   { title: "Home", url: "/", icon: Home },
   { title: "Events", url: "/events", icon: Trophy },
-  { title: "Players", url: "/players", icon: Users },
+  { title: "Leaderboard", url: "/players", icon: Users },
   { title: "Organisation", url: "/organisation", icon: Earth },
   { title: "Admin Control", url: "/admin", icon: ShieldCheck, adminOnly: true },
   { title: "About Us", url: "/about", icon: Info },

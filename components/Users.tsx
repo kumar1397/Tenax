@@ -130,7 +130,7 @@ export default function UsersPage({ initialPlayers }: { initialPlayers: any[] })
     <div className="p-6 max-w-[1600px] mx-auto">
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-3 md:gap-4 mb-6">
         <div className="flex items-center justify-between gap-3">
-          <h1 className="text-3xl md:text-4xl font-bold">Players</h1>
+          <h1 className="text-3xl md:text-4xl font-bold">Leaderboard</h1>
           <button
             onClick={() => setSearchOpen((o) => !o)}
             aria-label="Search players"

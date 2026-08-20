@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import toast from "react-hot-toast";
 import { Network, Crown, Loader2, Shuffle, RotateCcw, Trash2 } from "lucide-react";
 import { generateBracket, setBracketWinner, clearBracket } from "@/actions/bracket";
@@ -169,6 +170,14 @@ function SlotRow({
         className="w-full text-left transition hover:bg-secondary/50 disabled:opacity-50">
         {content}
       </button>
+    );
+  }
+  // Not in pick mode → a real player links to their profile.
+  if (seed) {
+    return (
+      <Link href={`/players/${seed.playerId}`} title={`View ${seed.name}`} className="block transition hover:bg-secondary/40">
+        {content}
+      </Link>
     );
   }
   return content;
