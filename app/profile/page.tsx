@@ -5,11 +5,11 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import { createClient } from "@/utils/supabase/client";
-import { getMyProfile, updateProfile, type ProfileForm } from "@/actions/profile";
+import { getMyProfile, updateProfile, deleteOwnAccount, type ProfileForm } from "@/actions/profile";
 import { listOrgs, type Org } from "@/actions/event";
 import { deriveEventStatus } from "@/lib/eventStatus";
 import {
-  Trophy, Clock, Calendar, LogOut, Shield, Loader2, Save, Building2, Pencil, Camera, X, Gamepad2, TrendingUp, AtSign, Mail,
+  Trophy, Clock, Calendar, LogOut, Shield, Loader2, Save, Building2, Pencil, Camera, X, Gamepad2, TrendingUp, AtSign, Mail, Trash2,
 } from "lucide-react";
 
 const REGIONS = ["", "NA", "EU", "APAC", "LATAM", "Global"];
@@ -34,6 +34,7 @@ export default function ProfilePage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [gameCovers, setGameCovers] = useState<Record<string, string>>({});
@@ -142,9 +143,20 @@ export default function ProfilePage() {
   }
 
   async function handleSignOut() {
-    const supabase = createClient();    
+    const supabase = createClient();
     await supabase.auth.signOut();
-    window.location.href = "/";          
+    window.location.href = "/";
+  }
+
+  async function handleDeleteAccount() {
+    if (!confirm("Delete your account permanently? This removes your profile and all your registrations, and cannot be undone.")) return;
+    setDeleting(true);
+    const res = await deleteOwnAccount();
+    if (res.error) { setDeleting(false); toast.error(res.error); return; }
+    const supabase = createClient();
+    await supabase.auth.signOut().catch(() => {});
+    toast.success("Your account has been deleted");
+    window.location.href = "/";
   }
 
   if (loading) return <div className="p-10 text-muted-foreground">Loading profile…</div>;
@@ -268,9 +280,9 @@ export default function ProfilePage() {
             <div className="text-sm font-semibold">{displayName}</div>
             <div className="text-xs text-muted-foreground">{form.game || "No main game"}</div>
           </div>
-          <div className="flex flex-wrap items-center gap-x-10 gap-y-4 sm:gap-x-12">
+          <div className="flex flex-1 flex-wrap items-center justify-around gap-x-6 gap-y-4">
             {statCards.map((s) => (
-              <div key={s.label} className="flex flex-col items-center gap-1 sm:items-start">
+              <div key={s.label} className="flex flex-col items-center gap-1">
                 <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-muted-foreground">
                   <s.icon className="size-4 text-primary" /> {s.label}
                 </div>
@@ -368,6 +380,19 @@ export default function ProfilePage() {
             ))}
           </div>
         )}
+      </div>
+
+      {/* Danger zone */}
+      <div className="mt-10 rounded-2xl border border-red-500/30 bg-red-500/5 p-5">
+        <h2 className="text-sm font-bold text-red-400">Delete account</h2>
+        <p className="mt-1 text-xs text-muted-foreground">Permanently remove your profile, registrations, and login. This can&apos;t be undone.</p>
+        <button
+          onClick={handleDeleteAccount}
+          disabled={deleting}
+          className="mt-3 inline-flex items-center gap-2 rounded-lg border border-red-500/40 bg-red-500/10 px-4 py-2 text-sm font-semibold text-red-400 transition hover:bg-red-500/20 disabled:opacity-50"
+        >
+          {deleting ? <Loader2 className="size-4 animate-spin" /> : <Trash2 className="size-4" />} Delete my account
+        </button>
       </div>
 
       {/* Edit modal — username / handle / region only */}

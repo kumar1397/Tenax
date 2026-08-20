@@ -3,6 +3,26 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/utils/supabase/server'
+import { createAdminClient } from '@/utils/supabase/admin'
+
+// A signed-in user permanently deletes their OWN account: registrations,
+// profile row, and auth login. (Admin deletion of others lives in actions/admin.)
+export async function deleteOwnAccount() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Not signed in' }
+
+  const admin = createAdminClient()
+  const { data: me } = await admin.from('Users').select('id').eq('auth_id', user.id).maybeSingle()
+  if (me?.id) {
+    await admin.from('event_participants').delete().eq('player_id', me.id)
+    await admin.from('Users').delete().eq('id', me.id)
+  }
+  // Remove the auth login itself (best-effort).
+  await admin.auth.admin.deleteUser(user.id).catch(() => {})
+
+  return { success: true }
+}
 
 export async function getMyProfile() {
   const supabase = await createClient()
