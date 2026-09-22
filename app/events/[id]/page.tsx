@@ -28,7 +28,6 @@ function toUiEvent(row: any): EventVM {
     description: row.event_description ?? "",
     rules: row.event_rule ?? "",
     bracketUrl: row.bracket_url ?? "",
-    bracket: row.bracket ?? null,
     streamUrl: row.stream_url ?? "",
     // completed-only
     impressions: row.impressions ?? null,

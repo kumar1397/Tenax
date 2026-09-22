@@ -2,7 +2,6 @@ import { notFound, redirect } from "next/navigation";
 import { getEvent, getEventParticipants } from "@/actions/event";
 import { createClient } from "@/utils/supabase/server";
 import AssignPoints from "@/components/AssignPoints";
-import { derivePlacements, type Bracket } from "@/lib/bracket";
 
 export default async function ResultsPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;
@@ -40,14 +39,10 @@ export default async function ResultsPage({ params }: { params: Promise<{ id: st
         restCount: Number(c.restCount) || 0,
     };
 
-    // Pre-fill positions from the bracket result, if there is one.
-    // derivePlacements is keyed by Users.id; map it onto each roster row's id.
-    const placements = ev.bracket ? derivePlacements(ev.bracket as Bracket) : {};
+    // No bracket-driven pre-fill anymore — the admin assigns placements here.
+    // (When Challonge result import lands, this is where those placements will
+    // seed initialPositions instead.)
     const initialPositions: Record<string, number> = {};
-    for (const r of roster) {
-        const pos = r.userId != null ? placements[r.userId] : undefined;
-        if (pos && pos <= 8) initialPositions[r.id] = pos;
-    }
 
     return (
         <AssignPoints
