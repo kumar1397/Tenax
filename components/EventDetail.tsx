@@ -9,7 +9,9 @@ import {
 } from "lucide-react";
 import { RegisterButton } from "@/components/registerButton";
 import BracketView from "@/components/Bracket";
+import ChallongeBracket from "@/components/ChallongeBracket";
 import type { Bracket } from "@/lib/bracket";
+import { isChallongeUrl } from "@/lib/challonge";
 import { sanitizeRichText } from "@/lib/richtext";
 
 export type EventVM = {
@@ -189,18 +191,26 @@ export default function EventDetailClient({ event, roster, canFinalize = false }
 
           {tab === "bracket" && (
             <Section title="Bracket" icon={Network}>
-              <BracketView
-                eventId={Number(event.id)}
-                bracket={event.bracket}
-                isAdmin={canFinalize}
-                status={event.status}
-                participantCount={roster.length}
-              />
-              {event.bracketUrl && (
-                <a href={event.bracketUrl} target="_blank" rel="noopener noreferrer"
-                  className="mt-4 inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-primary transition">
-                  <ExternalLink className="size-4" /> External bracket
-                </a>
+              {isChallongeUrl(event.bracketUrl) ? (
+                // Challonge is the source of truth for this event's bracket —
+                // embed it directly instead of running our own.
+                <ChallongeBracket url={event.bracketUrl} />
+              ) : (
+                <>
+                  <BracketView
+                    eventId={Number(event.id)}
+                    bracket={event.bracket}
+                    isAdmin={canFinalize}
+                    status={event.status}
+                    participantCount={roster.length}
+                  />
+                  {event.bracketUrl && (
+                    <a href={event.bracketUrl} target="_blank" rel="noopener noreferrer"
+                      className="mt-4 inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-primary transition">
+                      <ExternalLink className="size-4" /> External bracket
+                    </a>
+                  )}
+                </>
               )}
             </Section>
           )}

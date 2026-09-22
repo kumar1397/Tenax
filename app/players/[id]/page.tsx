@@ -3,7 +3,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { createPublicClient } from "@/utils/supabase/public";
 import { Trophy, Clock, Shield, Building2, Calendar, Gamepad2, TrendingUp, ArrowLeft, AtSign } from "lucide-react";
-import { deriveEventStatus } from "@/lib/eventStatus";
+import { deriveEventStatus, localDateTime } from "@/lib/eventStatus";
 
 export const revalidate = 60;
 
@@ -47,7 +47,7 @@ export default async function PlayerProfilePage({ params }: { params: Promise<{ 
       game: row.game_name ?? "",
       status: deriveEventStatus(row),
       cover: typeof row.cover_image === "string" && /^https?:\/\//.test(row.cover_image) ? row.cover_image : "",
-      date: row.event_date ?? "",
+      date: localDateTime(row.event_date, row.event_time),
     }));
 
   const mostGames = (() => {

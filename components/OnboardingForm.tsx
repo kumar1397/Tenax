@@ -31,6 +31,7 @@ export default function OnboardingForm({
   const [handle, setHandle] = useState("");
   const [email, setEmail] = useState(defaultEmail);
   const [region, setRegion] = useState("");
+  const [challongeUrl, setChallongeUrl] = useState("");
   const [avatar, setAvatar] = useState(defaultImage); // OAuth-provided picture, if any
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
@@ -102,6 +103,7 @@ export default function OnboardingForm({
         // Uploaded/OAuth picture, or a generated default if they skipped it
         player_image: avatar || defaultAvatar(handle.trim() || name.trim()),
         org_id: orgId,
+        challonge_url: challongeUrl.trim(),
       });
       if (res?.error) { setMsg("Error: " + res.error); return; }
       // Hard navigation so the middleware re-evaluates the gate with the
@@ -173,6 +175,15 @@ export default function OnboardingForm({
                 <option value="">Select a region</option>
                 {REGIONS.map((r) => <option key={r} value={r}>{r}</option>)}
               </select>
+            </div>
+          </label>
+
+          {/* Challonge profile — optional, powers result matching later */}
+          <label className="block">
+            <span className="text-xs font-semibold text-muted-foreground">Challonge profile <span className="font-normal text-muted-foreground/70">(optional)</span></span>
+            <div className="relative mt-1">
+              <Link2 className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+              <input value={challongeUrl} onChange={(e) => setChallongeUrl(e.target.value)} placeholder="challonge.com/users/yourname" className={field} />
             </div>
           </label>
 

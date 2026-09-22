@@ -4,6 +4,7 @@
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/utils/supabase/server'
 import { createAdminClient } from '@/utils/supabase/admin'
+import { challongeUsernameFromUrl } from '@/lib/challonge'
 
 // A signed-in user permanently deletes their OWN account: registrations,
 // profile row, and auth login. (Admin deletion of others lives in actions/admin.)
@@ -47,6 +48,7 @@ export type ProfileForm = {
   region: string
   player_image: string
   org_id: number | null
+  challonge_url: string
 }
 
 export async function updateProfile(form: ProfileForm) {
@@ -63,6 +65,10 @@ export async function updateProfile(form: ProfileForm) {
       region: form.region || null,
       player_image: form.player_image || null,
       org_id: form.org_id,          // ← org is now a link, not text
+      // Challonge link: keep the raw URL for display, plus the extracted
+      // username (lowercased) that we match tournament participants against.
+      challonge_url: form.challonge_url || null,
+      challonge_username: challongeUsernameFromUrl(form.challonge_url),
     })
     .eq('auth_id', user.id)
 
@@ -77,6 +83,7 @@ export type OnboardingForm = {
   org_id: number | null
   player_image: string
   email: string
+  challonge_url: string
 }
 
 // First-run save. Updates the row created at sign-in, but falls back to an
@@ -96,6 +103,10 @@ export async function completeOnboarding(form: OnboardingForm) {
     // Email captured on the form — Steam gives none, and some Discord accounts
     // have no synced email, so we always collect it here.
     player_email: form.email || null,
+    // Optional Challonge link — anchors this player to their Challonge account
+    // so imported tournament results can be matched back to them.
+    challonge_url: form.challonge_url || null,
+    challonge_username: challongeUsernameFromUrl(form.challonge_url),
   }
 
   const { data: updated, error: updErr } = await supabase

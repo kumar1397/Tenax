@@ -310,7 +310,7 @@ export default function CreateEventPage({ games, initial, eventId }: { games: st
             />
           </Field>
 
-          <Field label="Bracket URL" hint="Link to the bracket (Challonge, etc.)">
+          <Field label="Bracket URL" hint="Paste a Challonge tournament link to embed its live bracket on the event page. Any other link shows as an external bracket link.">
             <input value={form.bracketUrl} onChange={(e) => update("bracketUrl", e.target.value)} placeholder="https://challonge.com/..."
               className="w-full bg-card border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring/60 placeholder:text-muted-foreground" />
           </Field>
@@ -369,11 +369,6 @@ export default function CreateEventPage({ games, initial, eventId }: { games: st
               className="w-full py-3 rounded-xl bg-gradient-brand text-white font-semibold shadow-glow hover:scale-[1.02] transition disabled:opacity-50 disabled:cursor-not-allowed">
               {saving ? (isEdit ? "Saving..." : "Publishing...") : (isEdit ? "Save Changes" : "Publish Tournament")}
             </button>
-            {!isEdit && (
-              <button className="w-full py-3 rounded-xl bg-card border border-border text-foreground font-semibold hover:border-brand transition">
-                Save as Draft
-              </button>
-            )}
             {message && (
               <p className={`text-sm text-center ${message.startsWith("Error") ? "text-red-500" : "text-green-500"}`}>{message}</p>
             )}

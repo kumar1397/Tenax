@@ -7,7 +7,7 @@ import toast from "react-hot-toast";
 import { createClient } from "@/utils/supabase/client";
 import { getMyProfile, updateProfile, deleteOwnAccount, type ProfileForm } from "@/actions/profile";
 import { listOrgs, type Org } from "@/actions/event";
-import { deriveEventStatus } from "@/lib/eventStatus";
+import { deriveEventStatus, localDateTime } from "@/lib/eventStatus";
 import {
   Trophy, Clock, Calendar, LogOut, Shield, Loader2, Save, Building2, Pencil, Camera, X, Gamepad2, TrendingUp, AtSign, Mail, Trash2,
 } from "lucide-react";
@@ -27,7 +27,7 @@ const POINTS_SERIES = [
 type PlayedEvent = { id: string; title: string; game: string; status: string; cover: string; date: string };
 
 const EMPTY: ProfileForm = {
-  player_name: "", handle: "", game: "", region: "", player_image: "", org_id: null,
+  player_name: "", handle: "", game: "", region: "", player_image: "", org_id: null, challonge_url: "",
 };
 
 export default function ProfilePage() {
@@ -85,6 +85,7 @@ export default function ProfilePage() {
           region: p.region ?? "",
           player_image: p.player_image ?? "",
           org_id: p.org_id ?? null,
+          challonge_url: p.challonge_url ?? "",
         });
         setStats({ mmr: p.mmr ?? 0, winrate: p.win_rate ?? 0, rank: p.rank ?? "Unranked", hours: p.hours_played ?? 0 });
         setProfileEmail(p.player_email ?? "");
@@ -104,7 +105,7 @@ export default function ProfilePage() {
             game: row.game_name ?? "",
             status: deriveEventStatus(row),
             cover: row.cover_image ?? "",
-            date: row.event_date ?? "",
+            date: localDateTime(row.event_date, row.event_time),
           }));
         setEventsPlayed(evs);
       }
@@ -418,6 +419,11 @@ export default function ProfilePage() {
               <Field label="Region">
                 <Select value={form.region} onChange={(v) => update("region", v)} options={REGIONS} placeholder="Select a region" />
               </Field>
+              <div className="sm:col-span-2">
+                <Field label="Challonge profile" hint="Your Challonge profile link (challonge.com/users/yourname) — lets us match your tournament results to your account">
+                  <Input value={form.challonge_url} onChange={(v) => update("challonge_url", v)} placeholder="https://challonge.com/users/yourname" />
+                </Field>
+              </div>
             </div>
 
             <button

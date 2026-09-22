@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ChevronLeft, ChevronRight, Play, PlayCircle } from "lucide-react";
 import { JoinDiscord } from "@/components/JoinDiscord";
-import { deriveEventStatus } from "@/lib/eventStatus";
+import { deriveEventStatus, localDateTime } from "@/lib/eventStatus";
 
 type Event = {
   id: string;
@@ -40,7 +40,7 @@ function toUiEvent(row: any): Event {
     participants: row.no_of_player ?? 0,
     organizer: row.organizer ?? "—",
     cover: row.cover_image || FALLBACK_COVER,
-    startsAt: row.event_date ?? new Date().toISOString(),
+    startsAt: localDateTime(row.event_date, row.event_time) || new Date().toISOString(),
     streamUrl: row.stream_url ?? "",   // 👈 add
   };
 }

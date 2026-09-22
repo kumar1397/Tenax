@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { getEvent, getEventParticipants } from "@/actions/event";
 import EventDetailClient, { type EventVM, type RosterEntry } from "@/components/EventDetail";
 import { createClient } from "@/utils/supabase/server";
-import { deriveEventStatus } from "@/lib/eventStatus";
+import { deriveEventStatus, localDateTime } from "@/lib/eventStatus";
 
 const FALLBACK_COVER =
   "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=1000&q=75";
@@ -17,7 +17,7 @@ function toUiEvent(row: any): EventVM {
     format: row.event_format ?? "",
     prize: row.prize_pool ? `$${Number(row.prize_pool).toLocaleString()}` : "None",
     entry: row.is_paid ? `$${row.event_fee ?? 0}` : "Free",
-    startsAt: row.event_date ?? new Date().toISOString(),
+    startsAt: localDateTime(row.event_date, row.event_time) || new Date().toISOString(),
     eventTime: row.event_time ?? "",
     status: deriveEventStatus(row),
     participants: row.no_of_player ?? 0,

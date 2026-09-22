@@ -3,7 +3,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { createPublicClient } from "@/utils/supabase/public";
 import { Building2, Trophy, Users, Crown, Gamepad2, ExternalLink, ArrowLeft, TrendingUp } from "lucide-react";
-import { deriveEventStatus } from "@/lib/eventStatus";
+import { deriveEventStatus, localDateTime } from "@/lib/eventStatus";
 
 export const revalidate = 60;
 
@@ -83,7 +83,7 @@ export default async function OrgDetailPage({ params }: { params: Promise<{ id: 
       title: row.event_name ?? "Untitled",
       game: row.game_name ?? "",
       status: deriveEventStatus(row),
-      date: row.event_date ?? "",
+      date: localDateTime(row.event_date, row.event_time),
       cover: typeof row.cover_image === "string" && /^https?:\/\//.test(row.cover_image) ? row.cover_image : "",
     }));
   }

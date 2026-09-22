@@ -1,3 +1,13 @@
+// Combine a naive date + time into a string that `new Date()` parses in LOCAL
+// time. A date-only string ("2026-08-23") is parsed as UTC midnight, which then
+// shifts to the previous day for viewers behind UTC — appending a time forces
+// local ("wall clock") parsing so the date shows as entered, everywhere.
+export function localDateTime(date?: string | null, time?: string | null): string {
+  if (!date) return "";
+  const t = (time || "00:00").slice(0, 5);
+  return `${String(date).slice(0, 10)}T${t}`;
+}
+
 export type EventStatus = "Live" | "Upcoming" | "Completed";
 
 // Time-based status, with one committed state:

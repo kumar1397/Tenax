@@ -7,7 +7,7 @@ import { Search, SlidersHorizontal, Trophy, Zap, Gamepad2, Play, Plus, X, MoreVe
 import toast from "react-hot-toast";
 import { useRole } from "./useRole";
 import { updateEventStream } from "@/actions/event";
-import { deriveEventStatus } from "@/lib/eventStatus";
+import { deriveEventStatus, localDateTime } from "@/lib/eventStatus";
 
 type Event = {
   id: string;
@@ -39,7 +39,7 @@ function toUiEvent(row: any): Event {
     format: row.event_format ?? "",
     prize: row.prize_pool ? `$${Number(row.prize_pool).toLocaleString()}` : "$0",
     entry: row.is_paid ? `$${row.event_fee ?? 0}` : "Free",
-    startsAt: row.event_date ?? new Date().toISOString(),
+    startsAt: localDateTime(row.event_date, row.event_time) || new Date().toISOString(),
     eventTime: row.event_time ?? "",
     status: deriveEventStatus(row),
     participants: row.no_of_player ?? 0,
