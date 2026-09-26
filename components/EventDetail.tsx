@@ -269,10 +269,20 @@ export default function EventDetailClient({ event, roster, canFinalize = false }
           {/* Admin: award MMR and finalize. Replaces the old bracket-driven
               finalize path now that brackets live on Challonge. */}
           {canFinalize && !isCompleted && (
-            <Link href={`/events/${event.id}/results`}
-              className="flex items-center justify-center gap-2 rounded-2xl border border-brand bg-gradient-brand px-4 py-3 font-semibold text-white shadow-glow transition hover:scale-[1.02]">
-              <Award className="size-4" /> Assign points &amp; finalize
-            </Link>
+            <div className="space-y-2">
+              {isChallongeUrl(event.bracketUrl) && (
+                <Link href={`/events/${event.id}/challonge`}
+                  className="flex items-center justify-center gap-2 rounded-2xl border border-brand bg-gradient-brand px-4 py-3 font-semibold text-white shadow-glow transition hover:scale-[1.02]">
+                  <Network className="size-4" /> Import results from Challonge
+                </Link>
+              )}
+              <Link href={`/events/${event.id}/results`}
+                className={isChallongeUrl(event.bracketUrl)
+                  ? "flex items-center justify-center gap-2 rounded-2xl border border-border bg-card px-4 py-3 font-semibold transition hover:border-brand"
+                  : "flex items-center justify-center gap-2 rounded-2xl border border-brand bg-gradient-brand px-4 py-3 font-semibold text-white shadow-glow transition hover:scale-[1.02]"}>
+                <Award className="size-4" /> Assign points &amp; finalize
+              </Link>
+            </div>
           )}
 
           {!isCompleted && (

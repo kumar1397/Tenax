@@ -74,3 +74,27 @@ function normalizeUsername(s: string): string | null {
   const clean = s.trim().replace(/^@/, "").toLowerCase();
   return clean || null;
 }
+
+// Derive the identifier the Challonge API expects for a tournament from its
+// URL. A root tournament (challonge.com/abc123) is just its slug; a community
+// tournament (myorg.challonge.com/abc123) is addressed as "myorg-abc123".
+// Returns null for non-Challonge URLs.
+export function challongeTournamentId(url?: string | null): string | null {
+  if (!url) return null;
+  let u: URL;
+  try {
+    u = new URL(url.trim());
+  } catch {
+    return null;
+  }
+  const host = u.hostname.toLowerCase();
+  if (!/(^|\.)challonge\.com$/i.test(host)) return null;
+
+  const slug = u.pathname.split("/").filter(Boolean)[0];
+  if (!slug) return null;
+
+  const sub = host.endsWith(".challonge.com")
+    ? host.slice(0, -".challonge.com".length)
+    : "";
+  return sub && sub !== "www" ? `${sub}-${slug}` : slug;
+}
