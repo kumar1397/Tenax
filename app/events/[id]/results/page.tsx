@@ -26,7 +26,7 @@ export default async function ResultsPage({ params }: { params: Promise<{ id: st
         id: String(r.id),
         userId: r.Users?.id ?? null,
         name: r.Users?.player_name ?? "Unknown",
-        org: r.Users?.org_name ?? "",
+        org: r.Users?.orgs?.tricode ?? r.Users?.orgs?.name ?? "",
         avatar: r.Users?.player_image ?? "",
     }));
 

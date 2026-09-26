@@ -22,6 +22,9 @@ type Player = {
 };
 
 function toPlayer(row: any): Player {
+  // Org now comes from the joined `orgs` row (getUsers selects it), not the
+  // old flat org_* text columns.
+  const org = row.orgs ?? {};
   return {
     id: String(row.id),
     name: row.player_name ?? "Unknown",
@@ -31,12 +34,12 @@ function toPlayer(row: any): Player {
     rank: row.rank ?? "",
     winrate: row.win_rate ?? 0,
     hours: row.hours_played ?? 0,
-    status: row.status ?? "Offline",
+    status: "Offline",
     avatar: row.player_image ?? "",
-    orgName: row.org_name ?? "",
-    orgTricode: row.org_tricode ?? "",
-    orgLogo: row.org_logo ?? "",
-    orgLink: row.org_link ?? "",
+    orgName: org.name ?? "",
+    orgTricode: org.tricode ?? "",
+    orgLogo: org.logo ?? "",
+    orgLink: org.link ?? "",
   };
 }
 

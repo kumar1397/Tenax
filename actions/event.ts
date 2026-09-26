@@ -172,7 +172,7 @@ export async function getEventParticipants(eventId: number) {
   const supabase = await createClient()
   const { data, error } = await supabase
     .from('event_participants')
-    .select('*, Users(*)')   // pulls the full player record for each row
+    .select('*, Users(*, orgs(name, tricode))')   // player record + joined org
     .eq('event_id', eventId)
 
   if (error) return { error: error.message, data: [] }
@@ -253,7 +253,7 @@ export async function registerForEvent(eventId: number) {
   // Now checks org_id (belongs to an org) instead of the old text fields
   const { data: profile } = await supabase
     .from('Users')
-    .select('id, player_name, handle, region, org_id')
+    .select('id, player_name, handle, region, org_id, challonge_username')
     .eq('auth_id', user.id)
     .single()
 
@@ -264,6 +264,10 @@ export async function registerForEvent(eventId: number) {
   if (!profile.handle?.toString().trim()) missing.push('Handle')
   if (!profile.region?.toString().trim()) missing.push('Region')
   if (!profile.org_id) missing.push('Organization')
+  // Challonge link is required to compete: it's how imported tournament
+  // results are matched back to this player. A stored username means they
+  // entered a valid Challonge profile URL.
+  if (!profile.challonge_username?.toString().trim()) missing.push('Challonge profile')
 
   if (missing.length > 0) return { error: 'INCOMPLETE_PROFILE', missing }
 

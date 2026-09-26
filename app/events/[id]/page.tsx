@@ -43,7 +43,7 @@ function toRoster(rows: any[]): RosterEntry[] {
   return (rows ?? []).map((r) => ({
     id: String(r.id),
     name: r.Users?.player_name ?? "Unknown",
-    org: r.Users?.org_name ?? "",
+    org: r.Users?.orgs?.tricode ?? r.Users?.orgs?.name ?? "",
     team: r.team ?? null,
     avatar:
       r.Users?.player_image,
